@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 89
+Connection: close
+
+<!doctype html>
+<html>
+    <body>
+        Hallo Verden! Hello World!
+    </body>
+</html>
