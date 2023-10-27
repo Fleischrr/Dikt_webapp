@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- Define the element Autorisering -->
+  <xs:element name="Autorisering">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Bruker" type="BrukerType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Define the complex type BrukerType -->
+  <xs:complexType name="BrukerType">
+    <xs:sequence>
+      <xs:element name="Epost" type="xs:string"/>
+      <xs:element name="Passord" type="xs:string"/>
+      <xs:element name="Fornavn" type="xs:string"/>
+      <xs:element name="Etternavn" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

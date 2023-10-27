@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/css" href="style/grp_info.css"?>
+
+<gruppe>
+    <medlem> 
+        <navn> Knut Olav </navn>
+        <alder> 23 </alder>
+        <beskrivelse> Søt og snill </beskrivelse>
+    </medlem>
+    <medlem>
+        <navn> Per </navn>
+        <alder> 25 </alder>
+        <beskrivelse> Stygg og snill </beskrivelse>
+    </medlem>
+    <medlem>
+        <navn> Arne </navn>
+        <alder> 27 </alder>
+        <beskrivelse> Stygg og slem </beskrivelse>
+    </medlem>
+</gruppe>

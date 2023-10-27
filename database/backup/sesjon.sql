@@ -1,0 +1,5 @@
+CREATE TABLE Sesjon(
+       	Epost CHAR(50),
+	SesjonsID CHAR(33) PRIMARY KEY NOT NULL,
+	FOREIGN KEY(Epost) REFERENCES Bruker(Epost)
+);
