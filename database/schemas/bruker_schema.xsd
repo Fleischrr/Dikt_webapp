@@ -14,9 +14,9 @@
   <xs:complexType name="BrukerType">
     <xs:sequence>
       <xs:element name="Epost" type="xs:string"/>
-      <xs:element name="Passord" type="xs:string"/>
       <xs:element name="Fornavn" type="xs:string"/>
       <xs:element name="Etternavn" type="xs:string"/>
+      <xs:element name="Passord" type="xs:string"/>
     </xs:sequence>
   </xs:complexType>
 

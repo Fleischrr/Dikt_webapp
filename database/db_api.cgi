@@ -170,14 +170,14 @@ if [ "$tabell" = "Diktsamling" ]; then
 
     # ----  POST  ---- #
     if [ "$REQUEST_METHOD" = "POST" ]; then
-
+ 
         # Sjekker om bruker er logget inn
         if [ $LOGGED_IN -eq 0 ]; then
             ERROR_MSG "<ERROR>\n\t<text> Du er ikke logget inn! </text>\n</ERROR>"
         fi
 
         # Sjekker om element er satt
-        if [ -z "$element" ]; then
+        if [ -z "$element" ] ; then
             ERROR_MSG "<ERROR>\n\t<text> Element må være satt! </text>\n</ERROR>"
         fi
 
@@ -275,9 +275,9 @@ if [ "$tabell" = "Diktsamling" ]; then
     fi
 
 
-# ---- ---- ---- ---- #
-# ---- BRUKER TABELL ---- #
 elif [ "$tabell" = "Bruker" ]; then
+    # ---- ---- ---- ---- #
+    # ---- BRUKER TABELL ---- #
     
     # ----  GET  ---- #
     # - Logg inn - #
@@ -292,20 +292,25 @@ elif [ "$tabell" = "Bruker" ]; then
             
             # Henter ut elementer fra XML            
             EPOST=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/Login/Epost)" - )
-            PSSW_HASH=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/Login/Passord)" - )
+            PSSW=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/Login/Passord)" - )
 
             # Validerer brukerinput fra XML
             EPOST=$(echo "$EPOST" | sed 's/[^a-zA-Z0-9@.]//g')
-            PSSW_HASH=$(echo "$PSSW_HASH" | sed 's/[^a-zA-Z0-9]//g')
+            PSSW=$(echo -n "$PSSW" | sed 's/[^a-zA-Z0-9]//g')
 
             # Sjekker om bruker eksisterer i databasen
             if ! echo "SELECT * FROM $tabell WHERE Epost = '$EPOST';" | sqlite3 $database | grep -qE '^' ; then
                 ERROR_MSG "<ERROR>\n\t<text> Brukeren \"$EPOST\" finnes ikke! </text>\n</ERROR>"
             fi
 
+            # Henter salt fra databasen og hasher passordet
+            SALT=$(echo "SELECT Salt FROM $tabell WHERE Epost = '$EPOST';" | sqlite3 $database)
+            PSSW_SALT="${SALT}${PSSW}"
+            PSSW_HASH=$(echo -n "$PSSW_SALT" | sha256sum | awk '{print $1}')
+
             # Sjekker om passordet er riktig
             if ! echo "SELECT * FROM $tabell WHERE Epost = '$EPOST' AND Passordhash = '$PSSW_HASH';" | sqlite3 $database | grep -qE '^' ; then
-                ERROR_MSG "<ERROR>\n\t<text> Feil passord! $PSSW_HASH </text>\n</ERROR>"
+                ERROR_MSG "<ERROR>\n\t<text> Feil passord! PSSW: $PSSW_SALT og HASH: $PSSW_HASH </text>\n</ERROR>"
             fi
 
             # Hvis bruker har en session-cookie fra før, slett den
@@ -317,11 +322,12 @@ elif [ "$tabell" = "Bruker" ]; then
             session_cookie=$(head -c 32 /dev/urandom | base64 | tr -d '+/' | tr -d '=')
             echo "INSERT INTO Sesjon VALUES ('$EPOST', '$session_cookie');" | sqlite3 $database
 
+            # -- RESPONSE -- #
             # Header
             echo "Set-Cookie: session=$session_cookie; HttpOnly"
             write_header
 
-            # -- RESPONSE -- #
+            # Body
             echo "<message>\n\t<text> Brukeren \"$EPOST\" er logget inn! </text>\n</message>"
         else
             ERROR_MSG "<ERROR>\n\t<text> XML er ikke validert! </text>\n\r</ERROR>"
@@ -342,33 +348,39 @@ elif [ "$tabell" = "Bruker" ]; then
             
             # Henter ut elementer fra XML
             EPOST=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/$tabell/Epost)" - )        
-            PSSW_HASH=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/$tabell/Passord)" - )
             FORNAVN=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/$tabell/Fornavn)" - )
             ETTERNAVN=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/$tabell/Etternavn)" - )
-
+            PSSW=$(echo "$XML_DATA" | xmllint --xpath "normalize-space(/Autorisering/$tabell/Passord)" - )
+            
             # Validerer brukerinput fra XML
             EPOST=$(echo "$EPOST" | sed 's/[^a-zA-Z0-9@.]//g')
-            PSSW_HASH=$(echo "$PSSW_HASH" | sed 's/[^a-zA-Z0-9]//g')
             FORNAVN=$(echo "$FORNAVN" | sed 's/[^a-zA-Z]//g')
             ETTERNAVN=$(echo "$ETTERNAVN" | sed 's/[^a-zA-Z]//g')
+            PSSW=$(echo -n "$PSSW" | sed 's/[^a-zA-Z0-9]//g')
 
             # Sjekker om bruker allerede eksisterer basert på epost
             if echo "SELECT * FROM $tabell WHERE Epost = '$EPOST';" | sqlite3 $database | grep -qE '^' ; then
                 ERROR_MSG "<ERROR>\n\t<text> Brukeren \"$EPOST\" finnes allerede! </text>\n</ERROR>"
             fi
 
+            # Hasher passordet
+            SALT=$(head -c 15 /dev/urandom | base64 -w 0)
+            PSSW_SALT="${SALT}${PSSW}"
+            PSSW_HASH=$(echo -n "$PSSW_SALT" | sha256sum | awk '{print $1}')
+
             # Legger til brukeren i databasen
-            echo "INSERT INTO $tabell VALUES ('$EPOST', '$PSSW_HASH', '$FORNAVN', '$ETTERNAVN');" | sqlite3 $database
+            echo "INSERT INTO $tabell VALUES ('$EPOST', '$FORNAVN', '$ETTERNAVN', '$PSSW_HASH', '$SALT');" | sqlite3 $database
             
             # Genererer en session-cookie og legger til i databasen
             session_cookie=$(head -c 32 /dev/urandom | base64 | tr -d '+/' | tr -d '=')
             echo "INSERT INTO Sesjon VALUES ('$EPOST', '$session_cookie');" | sqlite3 $database
             
-            # Fullfører header
+            # -- RESPONSE -- #
+            # Header
             echo "Set-Cookie: session=$session_cookie; HttpOnly"
             write_header
             
-            # -- RESPONSE -- #
+            # Body
             echo "<message>\n\t<text> Brukeren \"$EPOST\" er registrert! </text>\n</message>"
             
         else
@@ -397,11 +409,12 @@ elif [ "$tabell" = "Bruker" ]; then
             # Sletter cookie fra databasen
             echo "DELETE FROM Sesjon WHERE SesjonsID = '$session_cookie';" | sqlite3 $database
 
-            # Fullfører header
+            # -- RESPONSE -- #
+            # Header
             echo "Set-Cookie: "
             write_header
 
-            # -- RESPONSE -- #
+            # Body
             echo "<message>\n\t<text> Du er nå logget ut! </text>\n</message>"
         fi
 
