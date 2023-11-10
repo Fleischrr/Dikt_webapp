@@ -3,8 +3,8 @@
 # Skript for å håndtere start/stop/debug av web_tjener.
 # Finner PID til ./web_tjener og dreper den med kill-kommandoen, eller
 # kompilerer og starter web_tjener i debug eller standard modus.
-WRKDIR=/opt/web_server
-ROTFS="/opt/web_server/container"
+WRKDIR=/opt/Dikt_webapp
+ROTFS="/opt/Dikt_webapp/container"
 DAEMON_PID=$(ps aux | grep "./web_tjener" | grep -v grep | awk '{print $2}')
 CONTAINER_PID=$(ps aux | grep "init" | grep -v grep | grep -v sbin | awk '{print $2}')
 
@@ -15,7 +15,7 @@ unshare_tjener () {
 
     # Kopierer filer fra host til container
     cp      /bin/busybox $ROTFS/bin/
-    cp -pr  /opt/web_server/var/www/* $ROTFS/var/www/ ; chmod -rwx $ROTFS/var/www/jail.asis
+    cp -pr  /opt/Dikt_webapp/var/www/* $ROTFS/var/www/ ; chmod -rwx $ROTFS/var/www/jail.asis
     cp      /etc/mime.types $ROTFS/etc/ #; chmod +r $ROTFS/etc/mime.types
     gcc -static -o $ROTFS/bin/tjener $ROTFS/../mptjener.c
 
@@ -59,7 +59,7 @@ kill_tjener () {
     if [ -n "$DAEMON_PID" ]; then
         if [ "$EUID" -eq 0 ]; then
             kill -9 $DAEMON_PID
-            rm -rf /opt/web_server/var/log/*
+            rm -rf /opt/Dikt_webapp/var/log/*
             echo "Stopper web_tjener daemon med PID: $DAEMON_PID"
         else
             echo "Trenger sudo/root for å stoppe daemon web tjener!";
