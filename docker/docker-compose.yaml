@@ -1,0 +1,12 @@
+version: '3'
+services:
+  cgi-backend:
+    build: 
+      context: /opt/Dikt_webapp/docker/
+      dockerfile: Dockerfile
+    container_name: cgi-backend
+    ports:
+      - "8080:80"
+    volumes: 
+      - /opt/Dikt_webapp/database/Diktdatabase.db:/usr/local/apache2/cgi-bin/Diktdatabase.db
+    restart: always
