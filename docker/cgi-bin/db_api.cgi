@@ -480,6 +480,31 @@ elif [ "$tabell" = "Bruker" ]; then
 
     fi
 
+    # ----  PUT  ---- #
+    if [ "$REQEST_METHOD" = "PUT" ]; then
+        
+        # Sjekker om cookie er satt
+        if [ -z "$HTTP_COOKIE" ]; then
+            ERROR_MSG "<ERROR><text> Du er ikke logget inn! </text></ERROR>"
+        else
+
+            # Sjekker cookie gyldighet
+            session_cookie=$(echo "$HTTP_COOKIE" | sed 's/session=\([^;]*\).*/\1/')
+            
+            if ! echo "SELECT * FROM Sesjon WHERE SesjonsID = '$session_cookie';" | sqlite3 $database | grep -qE '^' ; then
+                ERROR_MSG "<ERROR><text> Session-cookie er ikke gyldig! </text></ERROR>"
+            fi
+
+            # -- RESPONSE -- #
+            # Header
+            write_header
+
+            # Body
+            echo "<message><text> Gyldig cookie! </text></message>"
+
+
+    fi
+
 else
     ERROR_MSG "<ERROR><text> Tabellen finnes ikke! </text></ERROR>"
 fi
