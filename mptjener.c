@@ -9,7 +9,7 @@
 #include <sched.h>
 
 #define BACK_LOG 10
-#define REQUEST_SIZ 97 // satt til 97 for å kun lese nødvendige ting fra headeren
+#define REQUEST_SIZ 100 // satt til 100 for å kun lese nødvendige ting fra headeren
 
 void log_controller();
 void mode_handler();
@@ -24,7 +24,7 @@ void response_handler(int new_sd, char *requested_file, char *requested_filetype
 char *concat_file_and_type(char *filepath, char *filetype);
 char *mime_types_check(char *filetpye);
 
-int LOCAL_PORT = 8080;
+int LOCAL_PORT = 8000;
 char *TARGET_DIR = "/var/www";
 char *LOG_FILE = "/var/log/web_tjener.log";
 int log_fd;
