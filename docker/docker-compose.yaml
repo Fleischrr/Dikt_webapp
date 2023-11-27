@@ -1,12 +1,33 @@
 version: '3'
 services:
-  cgi-backend:
+  dikt-image: 
     build: 
-      context: /opt/Dikt_webapp/docker/
+      context: .
       dockerfile: Dockerfile
-    container_name: cgi-backend
+    image: dikt-image
+
+  konteiner-2:
+    build: 
+      context: ./backend
+      dockerfile: ./Dockerfile
+    image: konteiner-2
+    container_name: konteiner-2
     ports:
-      - "8080:80"
+      - "8180:80"
     volumes: 
       - /opt/Dikt_webapp/database/Diktdatabase.db:/usr/local/apache2/cgi-bin/Diktdatabase.db
     restart: always
+    depends_on:
+      - dikt-image
+
+  konteiner-3:
+    build: 
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    image: konteiner-3
+    container_name: konteiner-3
+    ports:
+      - "8080:80"
+    restart: always
+    depends_on:
+      - dikt-image

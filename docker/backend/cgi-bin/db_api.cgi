@@ -21,64 +21,11 @@ write_header () {
 # For error-meldinger
 ERROR_MSG () {
     local message="$1"
-    local status_code="${2:-400}" # sender 400 hvis ikke annet er spesifisert
-
-    echo "Status: $status_code"
+   
     write_header
     echo -n "$message"
     exit 1
-
-    # Usage:
-    # send_error "<ERROR><text>Tabellen finnes ikke!</text></ERROR>" 404
 }
-
-# For å kjøre SQL-spørringer
-execute_query() {
-    local query="$1"
-    echo "$query" | sqlite3 "$database"
-
-    # Usage:
-    # result=$(execute_query "SELECT * FROM Sesjon WHERE SesjonsID = '$session_cookie';")
-}
-
-# For å sanitere tittel
-sanitize_title() {
-    echo "$1" | sed 's/[^a-zA-Z0-9]//g'
-
-    # Usage:
-    # element=$(sanitize "$element")
-}
-
-# For å sanitere tekst
-sanitize_text() {
-    echo "$1" | sed 's/[^a-zA-Z0-9,.!? ]//g'
-
-    # Usage:
-    # element=$(sanitize "$element")
-}
-
-validate_xml() {
-    local xsd_file="$1"
-    local xml_data="$2"
-    local validation_result=$(echo "$xml_data" | xmllint --schema "$xsd_file" --noout - 2>&1)
-    if [ "$validation_result" != "- validates" ]; then
-        send_error "<ERROR><text>XML er ikke validert!</text></ERROR>" 422
-    fi
-
-    # Usage:
-    # XML_DATA=$(cat)
-    # validate_xml "${XSD_ROOT}login_schema.xsd" "$XML_DATA"
-}
-
-# Instead of this:
-# XML_DATA=$(cat)
-# Use this:
-#   XML_DATA=$(< /dev/stdin)
-
-# Combine multiple sed commands into one:
-#   TEKST=$(echo "$TEKST" | sed -e 's/[^a-zA-Z0-9.,!? ]//g')
-
-
 
 # ---- ---- ---- ---- ---- #
 # --- Foråndssjekker --- #
@@ -501,7 +448,7 @@ elif [ "$tabell" = "Bruker" ]; then
 
             # Body
             echo "<message><text> Gyldig cookie! </text></message>"
-
+        fi
 
     fi
 
