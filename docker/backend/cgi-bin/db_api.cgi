@@ -428,7 +428,7 @@ elif [ "$tabell" = "Bruker" ]; then
     fi
 
     # ----  PUT  ---- #
-    if [ "$REQEST_METHOD" = "PUT" ]; then
+    if [ "$REQUEST_METHOD" = "PUT" ]; then
         
         # Sjekker om cookie er satt
         if [ -z "$HTTP_COOKIE" ]; then

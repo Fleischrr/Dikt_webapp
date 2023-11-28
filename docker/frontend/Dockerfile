@@ -6,7 +6,6 @@ RUN chmod +x /usr/local/apache2/cgi-bin/*.cgi
 
 # Kopierer over html filer til htdocs
 COPY html/ /usr/local/apache2/htdocs/
-COPY css/ /usr/local/apache2/htdocs/css/
 
 # Kopierer over vhost config til container
 COPY frontend.conf /usr/local/apache2/conf/extra/custom-vhost.conf
