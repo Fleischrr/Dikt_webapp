@@ -23,7 +23,7 @@ if [ -z "$HTTP_COOKIE" ]; then
 else 
 
     # Send xml forespørsel til backend for å sjekke om bruker er logget inn
-    COOKIE_RESPONSE=$(curl -s -X PUT "http://192.168.1.120:8180/Diktdatabase/Bruker" -H "accept: text/xml" -H "Cookie: $HTTP_COOKIE")
+    COOKIE_RESPONSE=$(curl -s -X PUT "http://172.20.0.2/Diktdatabase/Bruker" -H "accept: text/xml" -H "Cookie: $HTTP_COOKIE")
 
     # Sjekke XML respons fra backend 
     if echo "$COOKIE_RESPONSE" | grep -q "<message><text> Gyldig cookie! </text></message>"; then
@@ -38,14 +38,14 @@ fi
 if [ "$REQUEST_METHOD" = "GET" ]; then
     if echo "$QUERY_STRING" | grep -q "show_all="; then
         # Execute the curl command and capture its output
-        CURL_OUTPUT=$(curl -s -X GET "http://192.168.1.120:8180/Diktdatabase/Diktsamling" -H "accept: text/xml")
+        CURL_OUTPUT=$(curl -s -X GET "http://172.20.0.2/Diktdatabase/Diktsamling" -H "accept: text/xml")
     elif echo "$QUERY_STRING" | grep -q "tittel="; then
         # Extract the poem title from the query string
         POEM_TITLE=$(echo "$QUERY_STRING" | sed 's/.*tittel=\([^&]*\).*/\1/' | sed 's/%20/ /g')
         if [ ! -z "$POEM_TITLE" ]; then
             # Execute the curl command with the poem title and capture its output
             # Replace this URL with the appropriate one that uses the poem title in the request
-            CURL_OUTPUT=$(curl -s -X GET "http://192.168.1.120:8180/Diktdatabase/Diktsamling/$POEM_TITLE" -H "accept: text/xml")
+            CURL_OUTPUT=$(curl -s -X GET "http://172.20.0.2/Diktdatabase/Diktsamling/$POEM_TITLE" -H "accept: text/xml")
         fi
     fi
 fi
@@ -65,7 +65,7 @@ if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 1 ]; then
     xml_request="<Diktsamling><Dikt><Tittel>$TITTEL</Tittel><Tekst>$TEKST</Tekst></Dikt></Diktsamling>"
 
     # Send the XML to the backend server
-    curl_output=$(curl -s -X POST "http://192.168.1.120:8180/Diktdatabase/Diktsamling/$TITTEL" -H "Cookie: $HTTP_COOKIE" -H "accept: text/xml" -H "Content-Type: text/xml" -d "$xml_request")
+    curl_output=$(curl -s -X POST "http://172.20.0.2/Diktdatabase/Diktsamling/$TITTEL" -H "Cookie: $HTTP_COOKIE" -H "accept: text/xml" -H "Content-Type: text/xml" -d "$xml_request")
 fi
 
 echo "Content-type:text/html;charset=utf-8"
