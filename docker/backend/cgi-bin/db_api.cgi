@@ -38,24 +38,23 @@ fi
 
 
 # -- Henter variabler fra URI -- #
-# Fjerner eventuelle '/' tegn i starten og slutten av URI
-input="${REQUEST_URI#/}"
-input="${input%/}"
+# Sjekker om URI har form '/text/text/' eller '/text/text/text'
+# Deler også opp input i variabler separert med '/'
+if echo "$REQUEST_URI" | grep -qE '^/[^/]+/[^/]+/$'; then
+    database=$(echo $REQUEST_URI | cut -f2 -d/)
+    tabell=$(echo $REQUEST_URI | cut -f3 -d/)
+    element=""
 
-# Deler opp input i variabler separert av '/'
-database="${input%%/*}"
+elif echo "$REQUEST_URI" | grep -qE '^/[^/]+/[^/]+/[^/]+$'; then
+    database=$(echo $REQUEST_URI | cut -f2 -d/)
+    tabell=$(echo $REQUEST_URI | cut -f3 -d/)
+    element=$(echo $REQUEST_URI | cut -f4 -d/)
 
-# Sjekker om input inneholder element eller bare tabell
-if echo "$REQUEST_URI" | grep -qE '^/[^/]+/[^/]+/[^/]+$'; then
-    sti="${input#*/}"
-    tabell="${sti%%/*}"
-    element="${sti#*/}"
 else 
-    tabell="${input#*/}"
+    ERROR_MSG "<ERROR><text> Feil i URI! </text></ERROR>"
 fi
 
-
-# -- Saniterer input. Fjerner alle tegn som ikke er a-z, A-Z eller 0-9 -- #
+# Saniterer input. Fjerner alle tegn som ikke er a-z, A-Z eller 0-9
 database=$(echo "$database" | sed 's/[^a-zA-Z]//g')
 tabell=$(echo "$tabell" | sed 's/[^a-zA-Z]//g')
 element=$(echo "$element" | sed 's/[^a-zA-Z0-9]//g')
@@ -160,7 +159,14 @@ if [ "$tabell" = "Diktsamling" ]; then
 
             # Sjekker om diktet finnes i databasen
             if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element' AND Epost = '$EPOST';" | sqlite3 $database | grep -qE '^' ; then
-                ERROR_MSG "<ERROR><text> Diktet \"$element\" finnes ikke! </text></ERROR>"
+                
+                # Sjekker om bruker eier diktet eller om diktet eksisterer
+                if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element';" | sqlite3 $database | grep -qE '^' ; then
+                    ERROR_MSG "<ERROR><text> Diktet \"$element\" finnes ikke! </text></ERROR>"
+                else
+                    ERROR_MSG "<ERROR><text> Diktet \"$element\" tilhører ikke bruker $EPOST! </text></ERROR>"
+                fi
+                
             else        
                 write_header
 
@@ -398,6 +404,7 @@ elif [ "$tabell" = "Bruker" ]; then
     fi
 
     # ----  DELETE  ---- #
+    # - Logg ut - #
     if [ "$REQUEST_METHOD" = "DELETE" ]; then
         
         # Sjekker om bruker er logget inn
@@ -428,6 +435,7 @@ elif [ "$tabell" = "Bruker" ]; then
     fi
 
     # ----  PUT  ---- #
+    # - Validere cookie - #
     if [ "$REQUEST_METHOD" = "PUT" ]; then
         
         # Sjekker om cookie er satt

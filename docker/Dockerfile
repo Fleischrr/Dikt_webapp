@@ -2,10 +2,6 @@ FROM httpd:alpine
 
 # Installere sqlite3, jq og xmllint etc.
 RUN apk update \
-    && apk add sqlite \
-    && apk add jq \
-    && apk add libxml2-utils \
-    && apk add curl \
     && apk add nano
 
 # Sletter default innhold i htdocs og cgi-bin

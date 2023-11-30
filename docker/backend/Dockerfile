@@ -1,5 +1,10 @@
 FROM dikt-image
 
+RUN apk update \
+    && apk add sqlite \
+    && apk add jq \
+    && apk add libxml2-utils 
+
 # Kopierer cgi-bin til container cgi-bin og gjør db_api.cgi kjørbar
 COPY cgi-bin/ /usr/local/apache2/cgi-bin/
 RUN chmod +x /usr/local/apache2/cgi-bin/db_api.cgi

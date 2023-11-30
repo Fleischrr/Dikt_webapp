@@ -3,21 +3,24 @@
 #
 
 # --- GLOBAL Variabler --- #
-CSS_IP="http://100.99.35.80/style/dikt.css"
+CONTAINER1_IP="kans-sndbox"
 
 LOGGED_IN=0
-COOKIE_RESPONSE=""
 QUERY_STRING=$(echo "$QUERY_STRING")
 CURL_OUTPUT=""
 SET_COOKIE=""
 
 
+# Sanitering av input
 sanitize() {
-    # Replace '+' with space
+    
+    # Bytte ut + med space
     local input=$(echo "$1" | sed 's/+/%20/g')
-    # Decode only allowed characters
+    
+    # Oversette tillatte spesialtegn
     local decoded=$(echo "$input" | sed 's/%20/ /g' | sed 's/%2C/,/g' | sed 's/%2E/./g' | sed 's/%21/!/g' | sed 's/%3F/?/g' | sed 's/%40/@/g')
-    # Remove everything except letters, numbers, comma, period, exclamation mark, question mark, and space
+
+    # Fjern alle tegn som ikke er tillatt
     echo "$decoded" | sed 's/[^a-zA-Z0-9 ,.!?@]//g'
 }
 
@@ -27,35 +30,44 @@ if [ -z "$HTTP_COOKIE" ]; then
 else 
 
     # Send xml forespørsel til backend for å sjekke om bruker er logget inn
-    COOKIE_RESPONSE=$(curl -s -X PUT "http://172.20.0.2/Diktdatabase/Bruker" -H "accept: text/xml" -H "Cookie: $HTTP_COOKIE")
+    COOKIE_RESPONSE=$(curl -s -X PUT "http://172.20.0.2/Diktdatabase/Bruker/" \
+        -H "accept: text/xml" \
+        -H "Cookie: $HTTP_COOKIE")
 
     # Sjekke XML respons fra backend 
     if echo "$COOKIE_RESPONSE" | grep -q "<message><text> Gyldig cookie! </text></message>"; then
         LOGGED_IN=1
+        LOGGED_IN_MSG="<br> Du er logget inn!"
     else
         LOGGED_IN=0
     fi    
 fi
 
 
-# --- Lese dikt (GET) --- #
-if [ "$REQUEST_METHOD" = "GET" ]; then
-    if echo "$QUERY_STRING" | grep -q "show_all="; then
-        
-        # Execute the curl command and capture its output
-        CURL_OUTPUT=$(curl -s -X GET "http://172.20.0.2/Diktdatabase/Diktsamling" -H "accept: text/xml")
+# --- LESE DIKT (GET) --- #
+if [ "$REQUEST_METHOD" = "GET" ] && echo "$QUERY_STRING" | grep -q "^dikt_"; then
 
-    elif echo "$QUERY_STRING" | grep -q "tittel="; then
+    # Hvis show_all er spesifisert, vis alle dikt
+    if echo "$QUERY_STRING" | grep -q "dikt_all="; then
+        
+        # Send forespørsel til backend server
+        CURL_OUTPUT=$(curl -s -X GET "http://172.20.0.2/Diktdatabase/Diktsamling/" \
+            -H "accept: text/xml")
+
+    # Hvis tittel er spesifisert, vis dikt
+    elif echo "$QUERY_STRING" | grep -q "dikt_tittel="; then
         
         # Hent tittel fra URL og saniterer
         POEM_TITLE=$(echo "$QUERY_STRING" | sed 's/.*tittel=\([^&]*\).*/\1/' | sed 's/%20/ /g')
         
-        CURL_OUTPUT=$(curl -s -X GET "http://172.20.0.2/Diktdatabase/Diktsamling/$POEM_TITLE" -H "accept: text/xml")
+        # Send forespørsel til backend server
+        CURL_OUTPUT=$(curl -s -X GET "http://172.20.0.2/Diktdatabase/Diktsamling/$POEM_TITLE" \
+            -H "accept: text/xml")
     fi
 
 fi
 
-# --- Logg inn (GET) --- #
+# --- LOGG INN (GET) --- #
 if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 0 ]; then
     read BODY
 
@@ -67,21 +79,22 @@ if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 0 ]; then
     xml_request="<Autorisering><Login><Epost>$EMAIL</Epost><Passord>$PASSWORD</Passord></Login></Autorisering>"
 
     # Send forespørsel til backend server
-    CURL_OUTPUT=$(curl -v -X GET "http://172.20.0.2/Diktdatabase/Bruker" \
+    CURL_OUTPUT=$(curl -v -X GET "http://172.20.0.2/Diktdatabase/Bruker/" \
         -H "accept: text/xml" \
         -H "Content-Type: text/xml" \
         -d "$xml_request" 2>&1)
 
     # Hente "Set-Cookie" command fra backend svar
     SET_COOKIE=$(echo "$CURL_OUTPUT" | grep 'Set-Cookie' | sed -e 's/^< //')
-    
+    CURL_OUTPUT="Du er logget inn!"
 fi
 
 
-# --- LEGGE TIL (POST) OG OPPDATERE (PUT) DIKT --- #
+# --- LEGGE TIL OG OPPDATERE DIKT --- #
 if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 1 ]; then
     read BODY
 
+    # --- LEGGE TIL DIKT (POST) --- #
     # Hvis gammel tittel ikke er spesifisert, legg til dikt
     if ! echo "$BODY" | grep -q "old_tittel="; then
         
@@ -100,6 +113,8 @@ if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 1 ]; then
             -d "$xml_request")
     fi
 
+    
+    # --- OPPDATERE DIKT (PUT) --- #
     # Hvis gammel tittel er spesifisert, oppdater dikts
     if echo "$BODY" | grep -q "old_tittel="; then
         
@@ -132,8 +147,8 @@ if [ "$REQUEST_METHOD" = "GET" ] && [ "$LOGGED_IN" -eq 1 ] && echo "$QUERY_STRIN
         
         # Send forespørsel til backend server
         CURL_OUTPUT=$(curl -s -X DELETE "http://172.20.0.2/Diktdatabase/Diktsamling/$POEM_TITLE" \
-        -H "Cookie: $HTTP_COOKIE" \
-        -H "accept: text/xml")
+            -H "Cookie: $HTTP_COOKIE" \
+            -H "accept: text/xml")
         
     fi
 
@@ -141,31 +156,53 @@ if [ "$REQUEST_METHOD" = "GET" ] && [ "$LOGGED_IN" -eq 1 ] && echo "$QUERY_STRIN
     if echo "$QUERY_STRING" | grep -q "del_all="; then
         
         # Send forespørsel til backend server
-        CURL_OUTPUT=$(curl -s -X DELETE "http://172.20.0.2/Diktdatabase/Diktsamling" \
-        -H "Cookie: $HTTP_COOKIE" \
-        -H "accept: text/xml")
+        CURL_OUTPUT=$(curl -s -X DELETE "http://172.20.0.2/Diktdatabase/Diktsamling/" \
+            -H "Cookie: $HTTP_COOKIE" \
+            -H "accept: text/xml")
     fi
 
 fi
+
+# --- LOGG UT (GET) --- #
+if [ "$REQUEST_METHOD" = "GET" ] && [ "$LOGGED_IN" -eq 1 ] && echo "$QUERY_STRING" | grep -q "^logout="; then
+
+    # Send forespørsel til backend server
+    CURL_OUTPUT=$(curl -s -X DELETE "http://172.20.0.2/Diktdatabase/Bruker/" \
+        -H "Cookie: $HTTP_COOKIE" \
+        -H "accept: text/xml")
+
+    if [ "$CURL_OUTPUT" = "<message><text> Du er nå logget ut! </text></message>" ]; then
+        LOGGED_IN=0
+        LOGGED_IN_MSG=""
+    fi
+fi
+
+
+
+# ------------------------- #
+# Tjener respons til bruker #
+# ------------------------- #
 
 # --- HEADER --- #
 # Hvis bruker har logget inn, gi cookie 
 if [ ! -z "$SET_COOKIE" ]; then
     echo $SET_COOKIE
     LOGGED_IN=1
+    LOGGED_IN_MSG="<br> Du er logget inn!"
 fi
 
 echo "Content-type:text/html;charset=utf-8"
 echo
 
-# ------ Hvis bruker er logget inn ------ #
-if [ "$LOGGED_IN" -eq 1 ]; then    
+
+# --- HTML BODY --- #
+
 cat << EOF
 <!DOCTYPE html>
 <html>
     <head>
         <title>Diktsamling</title>
-        <link rel="stylesheet" type="text/css" media="screen" href="$CSS_IP" />
+        <link rel="stylesheet" type="text/css" media="screen" href="http://$CONTAINER1_IP/style/dikt.css" />
     </head>
 
     <body>
@@ -173,20 +210,20 @@ cat << EOF
         <!-- Left side of page -->
         <div class="left-side">
             <h1> Gruppe 5 sin diktsamling! </h1>
-            <a href="http://localhost"> Gruppe 5 sin Hjemmeside </a>
-            <br> Du er logget inn!
+            <a href="http://$CONTAINER1_IP"> Gruppe 5 sin Hjemmeside </a>
+            $LOGGED_IN_MSG
             <p>
 
             <!-- Søk Form -->
-            <form action="" method="get">
+            <form action="/" method="get">
                 <label for="dikt_tittel">Dikt search:</label>
-                <input type="text" id="dikt_tittel" name="tittel" placeholder="Tittel">
+                <input type="text" id="dikt_tittel" name="dikt_tittel" placeholder="Tittel">
                 <input type="submit" value="search" class="submit-btn">
             </form>
 
             <!-- Vis alle dikt knapp -->
-            <form action="" method="get">
-                <input type="submit" name="show_all" value="Vis alle dikt" class="submit-btn" >
+            <form action="/" method="get">
+                <input type="submit" name="dikt_all" value="Vis alle dikt" class="submit-btn" >
             </form>
 
             <div class="centered-content">
@@ -198,21 +235,54 @@ $CURL_OUTPUT
             </div>
 
         </div>
-
-
-        <!-- Right side of page -->
+EOF
+#
+# ------ Hvis bruker ikke er logget inn ------ #
+#
+if [ "$LOGGED_IN" -eq 0 ]; then    
+cat << EOF
+<!-- Right side of page -->
         <div class="right-side">
         
+            <!-- Logg in Form -->
+            <form action="/" method="post" class="dikt-form">
+                
+                <div class="form-group">
+                    <label for="epost">Epostadresse:</label>
+                    <input type="email" id="epost" name="epost" class="form-control" placeholder="Epostadresse">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Passord">
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Logg inn" class="submit-btn">
+                </div>
+
+            </form>
+        
+    </body>
+</html>
+EOF
+
+else
+#
+# ------ Hvis bruker er logget inn ------ #
+#
+cat << EOF
+        <!-- Right side of page -->
+        <div class="right-side">
+
             <!-- Sende inn dikt Form -->
-            <form action="" method="post" class="dikt-form">
+            <form action="/" method="post" class="dikt-form">
                 
                 <div class="form-group">
                     <label for="tittel">Tittel:</label>
-                    <input type="text" id="tittel" name="tittel" class="form-control">
+                    <input type="text" id="tittel" name="tittel" class="form-control" placeholder="Tittel">
                 </div>
                 <div class="form-group">
                     <label for="tekst">Tekst:</label>
-                    <textarea id="tekst" name="tekst" class="form-control"></textarea> <!-- Changed to textarea -->
+                    <textarea id="tekst" name="tekst" class="form-control" placeholder="Skriv inn tekst her!"></textarea>
                 </div>
                 <div class="form-group">
                     <input type="submit" value="Send inn dikt" class="submit-btn">
@@ -221,16 +291,16 @@ $CURL_OUTPUT
             </form>
 
             <!-- Slette dikt Form -->
-            <form action="" method="delete" class="dikt-form">
+            <form action="/" method="delete" class="dikt-form">
                  <div class="form-group">
                     <label for="del_tittel">Tittel på dikt som skal slettes:</label>
-                    <input type="text" id="del_tittel" name="del_tittel" class="form-control">
+                    <input type="text" id="del_tittel" name="del_tittel" class="form-control" placeholder="Tittel">
                 </div>
                 <div class="form-group">
                     <input type="submit" value="Slett dikt" class="submit-btn">
                 </div>
             </form>
-            <form action="" method="get">
+            <form action="/" method="get">
                 <input type="submit" name="del_all" value="Slett alle dikt" class="submit-btn" >
             </form>
 
@@ -240,11 +310,11 @@ $CURL_OUTPUT
                 
                 <div class="form-group">
                     <label for="old_tittel">Gammel Tittel:</label>
-                    <input type="text" id="old_tittel" name="old_tittel" class="form-control">
+                    <input type="text" id="old_tittel" name="old_tittel" class="form-control" placeholder="Eksisterende Tittel">
                 </div>
                 <div class="form-group">
                     <label for="new_tittel">Ny Tittel:</label>
-                    <input type="text" id="new_tittel" name="new_tittel" class="form-control">
+                    <input type="text" id="new_tittel" name="new_tittel" class="form-control" placeholder="Ny Tittel">
                 </div>
                 <div class="form-group">
                     <label for="new_tekst">Ny Tekst:</label>
@@ -256,75 +326,14 @@ $CURL_OUTPUT
 
             </form>
 
+            <!-- Logg ut knapp -->
+            <form action="/" method="get">
+                <input type="submit" name="logout" value="Logg ut" class="submit-btn" >
+            </form>
 
         </div>
 
   </body>
-</html>
-EOF
-
-else
-# ------ Hvis bruker ikke er logget inn ------ #
-cat << EOF
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Diktsamling</title>
-        <link rel="stylesheet" type="text/css" media="screen" href="$CSS_IP" />
-    </head>
-
-    <body>
-
-        <!-- Left side of page -->
-        <div class="left-side">
-            <h1> Gruppe 5 sin diktsamling! </h1>
-            <a href="http://localhost"> Gruppe 5 sin Hjemmeside </a>
-            <p>
-
-            <!-- Søk Form -->
-            <form action="" method="get">
-                <label for="dikt_tittel">Dikt search:</label>
-                <input type="text" id="dikt_tittel" name="tittel" placeholder="Tittel">
-                <input type="submit" value="search" class="submit-btn">
-            </form>
-
-            <!-- Vis alle dikt knapp -->
-            <form action="" method="get">
-                <input type="submit" name="show_all" value="Vis alle dikt" class="submit-btn" >
-            </form>
-
-            <div class="centered-content">
------------------------
-  Dikt:
------------------------
-$CURL_OUTPUT
------------------------
-            </div>
-
-        </div>
-    
-        <!-- Right side of page -->
-        <div class="right-side">
-        
-            <!-- Logg in Form -->
-            <form action="/" method="post" class="dikt-form">
-                
-                <div class="form-group">
-                    <label for="epost">Epostadresse:</label>
-                    <input type="email" id="epost" name="epost" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" class="form-control">
-                </div>
-                <div class="form-group">
-                    <input type="submit" value="Logg inn" class="submit-btn">
-                </div>
-
-            </form>
-    
-    
-    </body>
 </html>
 EOF
 fi
