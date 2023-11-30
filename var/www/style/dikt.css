@@ -48,7 +48,7 @@ form {
 }
 
 .form-group {
-  margin-bottom: 20px; /* Add space between form groups */
+  margin-bottom: 10px; /* Add space between form groups */
 }
 
 .form-control {
@@ -64,7 +64,7 @@ form {
 }
 
 .submit-btn {
-  padding: 10px 20px;
+  padding: 5px 10px;
   cursor: pointer;
   background: darkorange;
   color: yellow;

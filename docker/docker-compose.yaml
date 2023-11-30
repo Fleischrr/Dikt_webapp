@@ -1,11 +1,5 @@
 version: '3.8'
 services:
-  dikt-image: 
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    image: dikt-image
-
   konteiner-2:
     build: 
       context: ./backend
@@ -17,8 +11,6 @@ services:
     volumes: 
       - /opt/Dikt_webapp/database/Diktdatabase.db:/usr/local/apache2/cgi-bin/Diktdatabase.db
     restart: always
-    depends_on:
-      - dikt-image
     networks:
       konteiner-nettverk:
         ipv4_address: 172.20.0.2
@@ -47,8 +39,6 @@ services:
     ports:
       - "8080:80"
     restart: always
-    depends_on:
-      - dikt-image
     networks:
       konteiner-nettverk:
         ipv4_address: 172.20.0.3

@@ -4,9 +4,6 @@ FROM dikt-image
 COPY cgi-bin/ /usr/local/apache2/cgi-bin/
 RUN chmod +x /usr/local/apache2/cgi-bin/*.cgi
 
-# Kopierer over html filer til htdocs
-COPY html/ /usr/local/apache2/htdocs/
-
 # Kopierer over vhost config til container
 COPY frontend.conf /usr/local/apache2/conf/extra/custom-vhost.conf
 

@@ -152,14 +152,14 @@ if [ "$tabell" = "Diktsamling" ]; then
                 write_header
 
                 # Sletter alle dikt til bruker og sender xml respnse
-                echo "DELETE FROM $tabell WHERE Epost = '$epost';" | sqlite3 $database
-                echo "<message><text> Alle dikt til bruker $epost er slettet! </text></message>"
+                echo "DELETE FROM $tabell WHERE Epost = '$EPOST';" | sqlite3 $database
+                echo "<message><text> Alle dikt til bruker $EPOST er slettet! </text></message>"
             fi
         else
             # Hvis element ikke er tom, slett spesifikt dikt
 
             # Sjekker om diktet finnes i databasen
-            if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element';" | sqlite3 $database | grep -qE '^' ; then
+            if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element' AND Epost = '$EPOST';" | sqlite3 $database | grep -qE '^' ; then
                 ERROR_MSG "<ERROR><text> Diktet \"$element\" finnes ikke! </text></ERROR>"
             else        
                 write_header
