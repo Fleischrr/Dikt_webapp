@@ -86,7 +86,17 @@ if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 0 ]; then
 
     # Hente "Set-Cookie" command fra backend svar
     SET_COOKIE=$(echo "$CURL_OUTPUT" | grep 'Set-Cookie' | sed -e 's/^< //')
-    CURL_OUTPUT="Du er logget inn!"
+    
+    # Sjekke om SET_COOKIE er satt
+    if [ -z "$SET_COOKIE" ]; then
+        LOGGED_IN=0
+        LOGGED_IN_MSG=""
+        CURL_OUTPUT=""
+    else
+        LOGGED_IN=1
+        LOGGED_IN_MSG="<br> Du er logget inn!"
+        CURL_OUTPUT="Du er logget inn!"
+    fi
 fi
 
 
@@ -187,10 +197,7 @@ fi
 # Hvis bruker har logget inn, gi cookie 
 if [ ! -z "$SET_COOKIE" ]; then
     echo $SET_COOKIE
-    LOGGED_IN=1
-    LOGGED_IN_MSG="<br> Du er logget inn!"
 fi
-
 echo "Content-type:text/html;charset=utf-8"
 echo
 
@@ -260,7 +267,8 @@ cat << EOF
                 </div>
 
             </form>
-        
+        </div>
+
     </body>
 </html>
 EOF

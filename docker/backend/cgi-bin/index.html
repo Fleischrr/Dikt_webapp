@@ -1,49 +1,122 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html>
+    <head>
+        <title>Diktsamling</title>
+        <link rel="stylesheet" type="text/css" media="screen" href="http://kans-sndbox/style/dikt.css" />
+        <script src="http://kans-sndbox/js/form-handler.js"></script>
+      
+    </head>
 
-  <head>
-    <meta charset="utf-8">
-    <title> Gruppe 5 </title>
-    <link rel="stylesheet" type="text/css" media="screen" href="style/home.css" />
+    <body>
 
-  </head>
+        <!-- Left side of page -->
+        <div class="left-side">
+            <h1> Gruppe 5 sin diktsamling! </h1>
+            <a href="http://kans-sndbox"> Gruppe 5 sin Hjemmeside </a>
+            <p id="login-status"> </p>
+
+            <!-- Søk Form -->
+            <form id="search-form" action="/" method="get">
+                <label for="dikt_tittel">Dikt search:</label>
+                <input type="text" id="dikt_tittel" name="dikt_tittel" placeholder="Tittel">
+                <input type="submit" value="search" class="submit-btn">
+            </form>
+
+            <!-- Vis alle dikt knapp -->
+            <form id="show_all-form" action="/" method="get">
+                <input type="submit" name="dikt_all" value="Vis alle dikt" class="submit-btn" >
+            </form>
+
+            <h1> Dikt: </h1>
+            <div id="result-display" class="centered-content">
+              <!-- Resultat vil bli vist her -->
+            </div>
+        </div>
+
+        <!-- Høyre side før innlogging -->
+        <div id="login-div" class="right-side">
+        
+          <!-- Logg in Form -->
+          <form id="login-form" action="/" method="post" class="dikt-form">
+              
+              <div class="form-group">
+                  <label for="epost">Epostadresse:</label>
+                  <input type="email" id="epost" name="epost" class="form-control" placeholder="Epostadresse">
+              </div>
+              <div class="form-group">
+                  <label for="password">Password:</label>
+                  <input type="password" id="password" name="password" class="form-control" placeholder="Passord">
+              </div>
+              <div class="form-group">
+                  <input type="submit" value="Logg inn" class="submit-btn">
+              </div>
+
+          </form>
+        
+        </div>
+
+        <!-- Høyre side etter innlogging -->
+        <div id="logged-in-div" class="right-side">
+          <!-- Sende inn dikt Form -->
+          <form id="send_dikt-form" action="/" method="post" class="dikt-form">
+                
+            <div class="form-group">
+                <label for="tittel">Tittel:</label>
+                <input type="text" id="tittel" name="tittel" class="form-control" placeholder="Tittel">
+            </div>
+            <div class="form-group">
+                <label for="tekst">Tekst:</label>
+                <textarea id="tekst" name="tekst" class="form-control" placeholder="Skriv inn tekst her!"></textarea>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Send inn dikt" class="submit-btn">
+            </div>
+
+          </form> 
 
 
-  <body>
-
-    <h1> Gruppe 5 </h1>
-    
-    <br>
-    Hello World! Dette er en nettside for gruppe 5!
-    <br>
-    
-    <div class="container">
-      <div class="header"><span> <a href="info.xml"> Gruppe 5 Informasjon </a> </span></div>
-        <p> Klikk på linken ovenfor for informasjon om gruppe 5. <br>
-
-        <br>
-      <div class="header"><span> <a href="http://kans-sndbox:8080"> Dikt </a> </span></div>
-        <p> Dikt linken overfor tar deg til våres Diktsamling. Her er det bare å legge inn dine fine dikt! <br>
-
-    </div>
-
-    <a href="http://www.usn.no"> USN Hjemmeside </a>
-    <p>
-    Appelsin: <br>
-
-    <a href="https://imgbb.com/"><img src="https://i.ibb.co/NCjNkQN/appelsin.png" alt="appelsin" border="0"></a>
+        <!-- Slette dikt Form -->
+        <form id="delete-dikt-form" action="/" method="delete" class="dikt-form">
+             <div class="form-group">
+                <label for="del_tittel">Tittel på dikt som skal slettes:</label>
+                <input type="text" id="del_tittel" name="del_tittel" class="form-control" placeholder="Tittel">
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Slett dikt" class="submit-btn">
+            </div>
+        </form>
+        <form action="/" method="get">
+            <input type="submit" name="del_all" value="Slett alle dikt" class="submit-btn" >
+        </form>
 
 
-    <p>
-      <a href="http://validator.w3.org/check?uri=referer">
-        This document was successfully checked as HTML5!
-      </a>
-  </p>
+        <!-- Oppdatere dikt Form -->
+        <form action="/" method="post" class="dikt-form">
+            
+            <div class="form-group">
+                <label for="old_tittel">Gammel Tittel:</label>
+                <input type="text" id="old_tittel" name="old_tittel" class="form-control" placeholder="Eksisterende Tittel">
+            </div>
+            <div class="form-group">
+                <label for="new_tittel">Ny Tittel:</label>
+                <input type="text" id="new_tittel" name="new_tittel" class="form-control" placeholder="Ny Tittel">
+            </div>
+            <div class="form-group">
+                <label for="new_tekst">Ny Tekst:</label>
+                <textarea id="new_tekst" name="new_tekst" class="form-control" placeholder="Skriv inn ny tekst her!"></textarea> 
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Oppdatere dikt" class="submit-btn">
+            </div>
 
+        </form>
 
-
-  </body>
-
+        
+        <!-- Logg ut knapp -->
+        <form action="/" method="get">
+            <input type="submit" name="logout" value="Logg ut" class="submit-btn" >
+        </form>
+      
+        </div>
+    </body>
 </html>
-
