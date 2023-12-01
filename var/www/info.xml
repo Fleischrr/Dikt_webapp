@@ -1,3 +1,7 @@
+HTTP/1.1 200 OK
+Content-Type: text/xml
+Connection: close
+
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/css" href="style/grp_info.css"?>
 

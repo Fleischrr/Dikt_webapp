@@ -1,0 +1,84 @@
+a {
+
+  color: #0d00ff;
+}
+
+h1 {
+  
+  font-size: 1.5em; 
+  color: darkorange;
+  
+
+}
+
+body {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  background: #448888;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  color: black;
+}
+
+form {
+  margin-bottom: 20px;
+  display: block;
+}
+
+/********** Dele siden i venste og høyre div **********/
+.left-side {
+  flex: 1;        /* Ta halve bredden */
+  padding: 20px;  
+  border-right: 5px solid darkorange;   /* Linje mellom sidene */
+  box-sizing: border-box;
+}
+
+.right-side {
+  flex: 1; 
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/********** Style for sentralisert innhold **********/
+.centered-content {
+  text-align: center; /* Center the text */
+  background-color: #f4f4f4; /* Similar to <pre> background */
+  border: 1px solid #ddd; /* Border like <pre> */
+  padding: 10px; /* Padding for spacing */
+  white-space: pre-wrap; /* Preserve the whitespace and line breaks */
+  word-break: break-all; /* To prevent overflow */
+}
+
+
+
+
+/********** Style for dikt innsending **********/
+.dikt-form {
+  display: flex;
+  flex-direction: column; /* Stack form groups vertically */
+}
+
+.form-group {
+  margin-bottom: 10px; /* Add space between form groups */
+}
+
+.form-control {
+  width: 100%; /* Full width of the form group */
+  padding: 10px;
+  margin-bottom: 10px; /* Space after each input */
+}
+
+/* Specific styles for the textarea to make it larger */
+#tekst {
+  height: 150px; /* Set a larger fixed height */
+  resize: vertical; /* Allow vertical resizing */
+}
+
+.submit-btn {
+  padding: 5px 10px;
+  cursor: pointer;
+  background: darkorange;
+  color: yellow;
+}

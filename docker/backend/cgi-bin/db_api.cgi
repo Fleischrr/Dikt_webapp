@@ -21,64 +21,11 @@ write_header () {
 # For error-meldinger
 ERROR_MSG () {
     local message="$1"
-    local status_code="${2:-400}" # sender 400 hvis ikke annet er spesifisert
-
-    echo "Status: $status_code"
+   
     write_header
     echo -n "$message"
     exit 1
-
-    # Usage:
-    # send_error "<ERROR><text>Tabellen finnes ikke!</text></ERROR>" 404
 }
-
-# For å kjøre SQL-spørringer
-execute_query() {
-    local query="$1"
-    echo "$query" | sqlite3 "$database"
-
-    # Usage:
-    # result=$(execute_query "SELECT * FROM Sesjon WHERE SesjonsID = '$session_cookie';")
-}
-
-# For å sanitere tittel
-sanitize_title() {
-    echo "$1" | sed 's/[^a-zA-Z0-9]//g'
-
-    # Usage:
-    # element=$(sanitize "$element")
-}
-
-# For å sanitere tekst
-sanitize_text() {
-    echo "$1" | sed 's/[^a-zA-Z0-9,.!? ]//g'
-
-    # Usage:
-    # element=$(sanitize "$element")
-}
-
-validate_xml() {
-    local xsd_file="$1"
-    local xml_data="$2"
-    local validation_result=$(echo "$xml_data" | xmllint --schema "$xsd_file" --noout - 2>&1)
-    if [ "$validation_result" != "- validates" ]; then
-        send_error "<ERROR><text>XML er ikke validert!</text></ERROR>" 422
-    fi
-
-    # Usage:
-    # XML_DATA=$(cat)
-    # validate_xml "${XSD_ROOT}login_schema.xsd" "$XML_DATA"
-}
-
-# Instead of this:
-# XML_DATA=$(cat)
-# Use this:
-#   XML_DATA=$(< /dev/stdin)
-
-# Combine multiple sed commands into one:
-#   TEKST=$(echo "$TEKST" | sed -e 's/[^a-zA-Z0-9.,!? ]//g')
-
-
 
 # ---- ---- ---- ---- ---- #
 # --- Foråndssjekker --- #
@@ -91,24 +38,23 @@ fi
 
 
 # -- Henter variabler fra URI -- #
-# Fjerner eventuelle '/' tegn i starten og slutten av URI
-input="${REQUEST_URI#/}"
-input="${input%/}"
+# Sjekker om URI har form '/text/text/' eller '/text/text/text'
+# Deler også opp input i variabler separert med '/'
+if echo "$REQUEST_URI" | grep -qE '^/[^/]+/[^/]+/$'; then
+    database=$(echo $REQUEST_URI | cut -f2 -d/)
+    tabell=$(echo $REQUEST_URI | cut -f3 -d/)
+    element=""
 
-# Deler opp input i variabler separert av '/'
-database="${input%%/*}"
+elif echo "$REQUEST_URI" | grep -qE '^/[^/]+/[^/]+/[^/]+$'; then
+    database=$(echo $REQUEST_URI | cut -f2 -d/)
+    tabell=$(echo $REQUEST_URI | cut -f3 -d/)
+    element=$(echo $REQUEST_URI | cut -f4 -d/)
 
-# Sjekker om input inneholder element eller bare tabell
-if echo "$REQUEST_URI" | grep -qE '^/[^/]+/[^/]+/[^/]+$'; then
-    sti="${input#*/}"
-    tabell="${sti%%/*}"
-    element="${sti#*/}"
 else 
-    tabell="${input#*/}"
+    ERROR_MSG "<ERROR><text> Feil i URI! </text></ERROR>"
 fi
 
-
-# -- Saniterer input. Fjerner alle tegn som ikke er a-z, A-Z eller 0-9 -- #
+# Saniterer input. Fjerner alle tegn som ikke er a-z, A-Z eller 0-9
 database=$(echo "$database" | sed 's/[^a-zA-Z]//g')
 tabell=$(echo "$tabell" | sed 's/[^a-zA-Z]//g')
 element=$(echo "$element" | sed 's/[^a-zA-Z0-9]//g')
@@ -205,15 +151,22 @@ if [ "$tabell" = "Diktsamling" ]; then
                 write_header
 
                 # Sletter alle dikt til bruker og sender xml respnse
-                echo "DELETE FROM $tabell WHERE Epost = '$epost';" | sqlite3 $database
-                echo "<message><text> Alle dikt til bruker $epost er slettet! </text></message>"
+                echo "DELETE FROM $tabell WHERE Epost = '$EPOST';" | sqlite3 $database
+                echo "<message><text> Alle dikt til bruker $EPOST er slettet! </text></message>"
             fi
         else
             # Hvis element ikke er tom, slett spesifikt dikt
 
             # Sjekker om diktet finnes i databasen
-            if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element';" | sqlite3 $database | grep -qE '^' ; then
-                ERROR_MSG "<ERROR><text> Diktet \"$element\" finnes ikke! </text></ERROR>"
+            if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element' AND Epost = '$EPOST';" | sqlite3 $database | grep -qE '^' ; then
+                
+                # Sjekker om bruker eier diktet eller om diktet eksisterer
+                if ! echo "SELECT * FROM $tabell WHERE Tittel = '$element';" | sqlite3 $database | grep -qE '^' ; then
+                    ERROR_MSG "<ERROR><text> Diktet \"$element\" finnes ikke! </text></ERROR>"
+                else
+                    ERROR_MSG "<ERROR><text> Diktet \"$element\" tilhører ikke bruker $EPOST! </text></ERROR>"
+                fi
+                
             else        
                 write_header
 
@@ -451,6 +404,7 @@ elif [ "$tabell" = "Bruker" ]; then
     fi
 
     # ----  DELETE  ---- #
+    # - Logg ut - #
     if [ "$REQUEST_METHOD" = "DELETE" ]; then
         
         # Sjekker om bruker er logget inn
@@ -476,6 +430,32 @@ elif [ "$tabell" = "Bruker" ]; then
 
             # Body
             echo "<message><text> Du er nå logget ut! </text></message>"
+        fi
+
+    fi
+
+    # ----  PUT  ---- #
+    # - Validere cookie - #
+    if [ "$REQUEST_METHOD" = "PUT" ]; then
+        
+        # Sjekker om cookie er satt
+        if [ -z "$HTTP_COOKIE" ]; then
+            ERROR_MSG "<ERROR><text> Du er ikke logget inn! </text></ERROR>"
+        else
+
+            # Sjekker cookie gyldighet
+            session_cookie=$(echo "$HTTP_COOKIE" | sed 's/session=\([^;]*\).*/\1/')
+            
+            if ! echo "SELECT * FROM Sesjon WHERE SesjonsID = '$session_cookie';" | sqlite3 $database | grep -qE '^' ; then
+                ERROR_MSG "<ERROR><text> Session-cookie er ikke gyldig! </text></ERROR>"
+            fi
+
+            # -- RESPONSE -- #
+            # Header
+            write_header
+
+            # Body
+            echo "<message><text> Gyldig cookie! </text></message>"
         fi
 
     fi
