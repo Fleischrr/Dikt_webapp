@@ -2,17 +2,35 @@
 <html>
     <head>
         <title>Diktsamling</title>
-        <link rel="stylesheet" type="text/css" media="screen" href="http://kans-sndbox/style/dikt.css" />
-        <script src="http://kans-sndbox/js/form-handler.js"></script>
+        <link rel="stylesheet" type="text/css" media="screen" href="http://kand-sndbox/style/dikt.css" />
+        <script src="http://kand-sndbox/js/form-handler.js"></script>
       
     </head>
 
-    <body>
+    <script>
+        function serviceWorkerSjekk() {
+            if( ! ( 'serviceWorker' in navigator) ) 
+
+                alert ('"ServiceWorker" er ikke støttet');
+
+            else {
+
+                navigator.serviceWorker.register('serviceArbeider.js').then  (
+                    function (reg)     { alert ('Installasjon fullført')     } ).catch (
+                    function (err)     { alert ('Innstallasjon feilet:'+err) }
+                    );
+            }
+        }
+    </script>
+
+
+
+    <body onload="serviceWorkerSjekk()">
 
         <!-- Left side of page -->
         <div class="left-side">
             <h1> Gruppe 5 sin diktsamling! </h1>
-            <a href="http://kans-sndbox"> Gruppe 5 sin Hjemmeside </a>
+            <a href="http://kand-sndbox"> Gruppe 5 sin Hjemmeside </a>
             <p id="login-status"> </p>
 
             <!-- Søk Form -->
@@ -33,6 +51,7 @@
             </div>
         </div>
 
+        
         <!-- Høyre side før innlogging -->
         <div id="login-div" class="right-side">
         
@@ -57,66 +76,66 @@
 
         <!-- Høyre side etter innlogging -->
         <div id="logged-in-div" class="right-side">
-          <!-- Sende inn dikt Form -->
-          <form id="send_dikt-form" action="/" method="post" class="dikt-form">
+            <!-- Sende inn dikt Form -->
+            <form id="send_dikt-form" action="/" method="post" class="dikt-form">
+                    
+                <div class="form-group">
+                    <label for="tittel">Tittel:</label>
+                    <input type="text" id="tittel" name="tittel" class="form-control" placeholder="Tittel">
+                </div>
+                <div class="form-group">
+                    <label for="tekst">Tekst:</label>
+                    <textarea id="tekst" name="tekst" class="form-control" placeholder="Skriv inn tekst her!"></textarea>
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Send inn dikt" class="submit-btn">
+                </div>
+
+            </form> 
+
+
+            <!-- Slette dikt Form -->
+            <form id="delete-dikt-form" action="/" method="delete" class="dikt-form">
+                <div class="form-group">
+                    <label for="del_tittel">Tittel på dikt som skal slettes:</label>
+                    <input type="text" id="del_tittel" name="del_tittel" class="form-control" placeholder="Tittel">
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Slett dikt" class="submit-btn">
+                </div>
+            </form>
+            <form id="delete-all-dikt-form" action="/" method="get">
+                <input type="submit" name="del_all" value="Slett alle dikt" class="submit-btn" >
+            </form>
+
+
+            <!-- Oppdatere dikt Form -->
+            <form id="update-dikt-form" action="/" method="post" class="dikt-form">
                 
-            <div class="form-group">
-                <label for="tittel">Tittel:</label>
-                <input type="text" id="tittel" name="tittel" class="form-control" placeholder="Tittel">
-            </div>
-            <div class="form-group">
-                <label for="tekst">Tekst:</label>
-                <textarea id="tekst" name="tekst" class="form-control" placeholder="Skriv inn tekst her!"></textarea>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Send inn dikt" class="submit-btn">
-            </div>
+                <div class="form-group">
+                    <label for="old_tittel">Gammel Tittel:</label>
+                    <input type="text" id="old_tittel" name="old_tittel" class="form-control" placeholder="Eksisterende Tittel">
+                </div>
+                <div class="form-group">
+                    <label for="new_tittel">Ny Tittel:</label>
+                    <input type="text" id="new_tittel" name="new_tittel" class="form-control" placeholder="Ny Tittel">
+                </div>
+                <div class="form-group">
+                    <label for="new_tekst">Ny Tekst:</label>
+                    <textarea id="new_tekst" name="new_tekst" class="form-control" placeholder="Skriv inn ny tekst her!"></textarea> 
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Oppdatere dikt" class="submit-btn">
+                </div>
 
-          </form> 
+            </form>
 
-
-        <!-- Slette dikt Form -->
-        <form id="delete-dikt-form" action="/" method="delete" class="dikt-form">
-             <div class="form-group">
-                <label for="del_tittel">Tittel på dikt som skal slettes:</label>
-                <input type="text" id="del_tittel" name="del_tittel" class="form-control" placeholder="Tittel">
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Slett dikt" class="submit-btn">
-            </div>
-        </form>
-        <form action="/" method="get">
-            <input type="submit" name="del_all" value="Slett alle dikt" class="submit-btn" >
-        </form>
-
-
-        <!-- Oppdatere dikt Form -->
-        <form action="/" method="post" class="dikt-form">
             
-            <div class="form-group">
-                <label for="old_tittel">Gammel Tittel:</label>
-                <input type="text" id="old_tittel" name="old_tittel" class="form-control" placeholder="Eksisterende Tittel">
-            </div>
-            <div class="form-group">
-                <label for="new_tittel">Ny Tittel:</label>
-                <input type="text" id="new_tittel" name="new_tittel" class="form-control" placeholder="Ny Tittel">
-            </div>
-            <div class="form-group">
-                <label for="new_tekst">Ny Tekst:</label>
-                <textarea id="new_tekst" name="new_tekst" class="form-control" placeholder="Skriv inn ny tekst her!"></textarea> 
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Oppdatere dikt" class="submit-btn">
-            </div>
-
-        </form>
-
+            <!-- Logg ut knapp -->
+            <form id="logout-form" action="/" method="get">
+                <input type="submit" name="logout" value="Logg ut" class="submit-btn" >
+            </form>
         
-        <!-- Logg ut knapp -->
-        <form action="/" method="get">
-            <input type="submit" name="logout" value="Logg ut" class="submit-btn" >
-        </form>
-      
         </div>
     </body>
 </html>
