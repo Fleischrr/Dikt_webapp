@@ -4,8 +4,8 @@ self.addEventListener('install', function(event) {
             return cache.addAll([
                 '/',
                 '/index.html',
-                'http://kans-sndbox/js/form-handler.js',
-                'http://kans-sndbox/js/style/dikt.css'
+                'http://localhost:8000/js/form-handler.js',
+                'http://localhost:8000/js/style/dikt.css'
             ]);
         })
     );

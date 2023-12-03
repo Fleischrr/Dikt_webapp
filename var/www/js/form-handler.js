@@ -1,3 +1,7 @@
+HTTP/1.1 200 OK
+Content-Type: text/javascript
+Connection: close
+
 document.addEventListener('DOMContentLoaded', function() {
 
     
@@ -39,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let cookie = getSessionCookie(); 
         if (cookie) {
             var xhr = new XMLHttpRequest();
-            xhr.open('PUT', 'http://kans-sndbox:8180/Diktdatabase/Bruker/', true);
+            xhr.open('PUT', 'http://localhost:8180/Diktdatabase/Bruker/', true);
             xhr.setRequestHeader('accept', 'text/xml');
             
             xhr.onload = function() {
@@ -76,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var diktTittel = document.getElementById('dikt_tittel').value;
         
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://kans-sndbox:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(diktTittel), true);
+        xhr.open('GET', 'http://localhost:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(diktTittel), true);
         
         xhr.onload = function() {
             document.getElementById('result-display').innerHTML = xhr.responseText;
@@ -90,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://kans-sndbox:8180/Diktdatabase/Diktsamling/', true);
+        xhr.open('GET', 'http://localhost:8180/Diktdatabase/Diktsamling/', true);
         
         xhr.onload = function() {
             document.getElementById('result-display').innerHTML = xhr.responseText;
@@ -111,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var xmlRequest = "<Autorisering><Login><Epost>" + email + "</Epost><Passord>" + password + "</Passord></Login></Autorisering>";
         
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://kans-sndbox:8180/Diktdatabase/Bruker/', true);
+        xhr.open('POST', 'http://localhost:8180/Diktdatabase/Bruker/', true);
         xhr.setRequestHeader('Content-Type', 'text/xml');
         xhr.setRequestHeader('accept', 'text/xml');
         
@@ -141,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var xmlRequest = "<Diktsamling><Dikt><Tittel>" + tittel + "</Tittel><Tekst>" + tekst + "</Tekst></Dikt></Diktsamling>";
         
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://kans-sndbox:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(tittel), true);
+        xhr.open('POST', 'http://localhost:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(tittel), true);
         xhr.setRequestHeader('Content-Type', 'text/xml');
         xhr.setRequestHeader('accept', 'text/xml');
         
@@ -163,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         poemTitle = sanitizeInput(poemTitle);
         
         var xhr = new XMLHttpRequest();
-        xhr.open('DELETE', 'http://kans-sndbox:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(poemTitle), true);
+        xhr.open('DELETE', 'http://localhost:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(poemTitle), true);
         xhr.setRequestHeader('accept', 'text/xml');
         
         xhr.onload = function() {
@@ -179,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         var xhr = new XMLHttpRequest();
-        xhr.open('DELETE', 'http://kans-sndbox:8180/Diktdatabase/Diktsamling/', true);
+        xhr.open('DELETE', 'http://localhost:8180/Diktdatabase/Diktsamling/', true);
         xhr.setRequestHeader('accept', 'text/xml');
         
         xhr.onload = function() {
@@ -207,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var xmlRequest = "<Diktsamling><Dikt><Tittel>" + newTitle + "</Tittel><Tekst>" + newText + "</Tekst></Dikt></Diktsamling>";
         
         var xhr = new XMLHttpRequest();
-        xhr.open('PUT', 'http://kans-sndbox:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(oldTitle), true);
+        xhr.open('PUT', 'http://localhost:8180/Diktdatabase/Diktsamling/' + encodeURIComponent(oldTitle), true);
         xhr.setRequestHeader('Content-Type', 'text/xml');
         xhr.setRequestHeader('accept', 'text/xml');
         
@@ -224,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         var xhr = new XMLHttpRequest();
-        xhr.open('DELETE', 'http://kans-sndbox:8180/Diktdatabase/Bruker/', true);
+        xhr.open('DELETE', 'http://localhost:8180/Diktdatabase/Bruker/', true);
         xhr.setRequestHeader('accept', 'text/xml');
         
         xhr.onload = function() {
