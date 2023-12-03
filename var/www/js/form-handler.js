@@ -1,5 +1,6 @@
 HTTP/1.1 200 OK
 Content-Type: text/javascript
+Access-Control-Allow-Origin: *
 Connection: close
 
 document.addEventListener('DOMContentLoaded', function() {

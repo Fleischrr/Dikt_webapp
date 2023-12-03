@@ -7,11 +7,12 @@
       
     </head>
 
+    <!-- Script for å sjekke om service worker er støttet -->
     <script>
         function serviceWorkerSjekk() {
             if( ! ( 'serviceWorker' in navigator) ) 
 
-                alert ('"ServiceWorker" er ikke støttet');
+                alert ('"ServiceWorker" er ikke stoettet');
 
             else {
 
@@ -24,10 +25,10 @@
     </script>
 
 
-
+    <!-- Kropp som laster serviceworker og viser innhold -->
     <body onload="serviceWorkerSjekk()">
 
-        <!-- Left side of page -->
+        <!-- Venstre del av siden -->
         <div class="left-side">
             <h1> Gruppe 5 sin diktsamling! </h1>
             <a href="http://localhost:8000"> Gruppe 5 sin Hjemmeside </a>

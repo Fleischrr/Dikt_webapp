@@ -1,8 +1,7 @@
 FROM httpd:alpine
 
-# Installere sqlite3, jq og xmllint etc.
-RUN apk update \
-    && apk add nano
+# Oppdatere pakkeliste og oppgraderer alle pakker
+RUN apk update && apk upgrade
 
 # Sletter default innhold i htdocs og cgi-bin
 RUN rm -rf /usr/local/apache2/htdocs/* /usr/local/apache2/cgi-bin/* /usr/local/apache2/conf/extra/*
