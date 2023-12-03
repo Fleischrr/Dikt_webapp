@@ -3,7 +3,7 @@
 #
 
 # --- GLOBAL Variabler --- #
-CONTAINER1_IP="kans-sndbox"
+CONTAINER1_IP="localhost"
 
 LOGGED_IN=0
 QUERY_STRING=$(echo "$QUERY_STRING")
@@ -79,14 +79,24 @@ if [ "$REQUEST_METHOD" = "POST" ] && [ "$LOGGED_IN" -eq 0 ]; then
     xml_request="<Autorisering><Login><Epost>$EMAIL</Epost><Passord>$PASSWORD</Passord></Login></Autorisering>"
 
     # Send forespørsel til backend server
-    CURL_OUTPUT=$(curl -v -X GET "http://172.20.0.2/Diktdatabase/Bruker/" \
+    CURL_OUTPUT=$(curl -v -X POST "http://172.20.0.2/Diktdatabase/Bruker/" \
         -H "accept: text/xml" \
         -H "Content-Type: text/xml" \
         -d "$xml_request" 2>&1)
 
     # Hente "Set-Cookie" command fra backend svar
     SET_COOKIE=$(echo "$CURL_OUTPUT" | grep 'Set-Cookie' | sed -e 's/^< //')
-    CURL_OUTPUT="Du er logget inn!"
+    
+    # Sjekke om SET_COOKIE er satt
+    if [ -z "$SET_COOKIE" ]; then
+        LOGGED_IN=0
+        LOGGED_IN_MSG=""
+        CURL_OUTPUT=""
+    else
+        LOGGED_IN=1
+        LOGGED_IN_MSG="<br> Du er logget inn!"
+        CURL_OUTPUT="Velkommen!"
+    fi
 fi
 
 
@@ -187,10 +197,7 @@ fi
 # Hvis bruker har logget inn, gi cookie 
 if [ ! -z "$SET_COOKIE" ]; then
     echo $SET_COOKIE
-    LOGGED_IN=1
-    LOGGED_IN_MSG="<br> Du er logget inn!"
 fi
-
 echo "Content-type:text/html;charset=utf-8"
 echo
 
@@ -202,7 +209,7 @@ cat << EOF
 <html>
     <head>
         <title>Diktsamling</title>
-        <link rel="stylesheet" type="text/css" media="screen" href="http://$CONTAINER1_IP/style/dikt.css" />
+        <link rel="stylesheet" type="text/css" media="screen" href="http://$CONTAINER1_IP:8000/style/dikt.css" />
     </head>
 
     <body>
@@ -210,7 +217,7 @@ cat << EOF
         <!-- Left side of page -->
         <div class="left-side">
             <h1> Gruppe 5 sin diktsamling! </h1>
-            <a href="http://$CONTAINER1_IP"> Gruppe 5 sin Hjemmeside </a>
+            <a href="http://$CONTAINER1_IP:8000"> Gruppe 5 sin Hjemmeside </a>
             $LOGGED_IN_MSG
             <p>
 
@@ -260,7 +267,8 @@ cat << EOF
                 </div>
 
             </form>
-        
+        </div>
+
     </body>
 </html>
 EOF
