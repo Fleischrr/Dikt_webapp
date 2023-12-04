@@ -1,7 +1,8 @@
 FROM httpd:alpine
 
 # Oppdatere pakkeliste og oppgraderer alle pakker
-RUN apk update && apk upgrade
+RUN apk update \
+    && apk upgrade 
 
 # Sletter default innhold i htdocs og cgi-bin
 RUN rm -rf /usr/local/apache2/htdocs/* /usr/local/apache2/cgi-bin/* /usr/local/apache2/conf/extra/*

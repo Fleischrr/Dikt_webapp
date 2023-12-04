@@ -1,7 +1,6 @@
 FROM dikt-image
 
-RUN apk update \
-    && apk add sqlite \
+RUN apk add sqlite \
     && apk add jq \
     && apk add libxml2-utils 
 

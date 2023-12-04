@@ -1,7 +1,6 @@
 FROM dikt-image
 
-RUN apk update \
-    && apk add curl
+RUN apk add curl
 
 # Kopierer cgi-bin til container og gjør de kjørbare
 COPY cgi-bin/ /usr/local/apache2/cgi-bin/

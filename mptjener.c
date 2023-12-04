@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -42,6 +43,15 @@ struct mime_end_and_type *ll_head;
 
 int main()
 {
+
+    // Forhindrer zombie prosesser
+    struct sigaction sigchld_action = {
+        .sa_handler = SIG_DFL,
+        .sa_flags = SA_NOCLDWAIT
+    };
+    
+    sigaction(SIGCHLD, &sigchld_action, NULL);
+
     mode_handler();
     log_controller();
     struct sockaddr_in loc_addr;
@@ -80,6 +90,7 @@ int main()
     loc_addr.sin_port = htons((__u_short)LOCAL_PORT);
     loc_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
+
     // Kobler sammen socket og lokal adresse
     if (bind(sd, (struct sockaddr *)&loc_addr, sizeof(loc_addr)) < 0)
     {
@@ -101,56 +112,52 @@ int main()
         fprintf(stderr, "Prosess %d er ikke en daemon, kopierer mime.tpyes...\n", getpid());
         mime_types_linked_list();
         fprintf(stderr, "mime.types kopiert\n");
-    }
+    } 
 
-    // Demoniserer web-tjeneren
+
+    // Endrer arbeidskatalog og Demoniserer web-tjeneren
     disassosiate();
+    
 
-    if (0 == fork())
+    fprintf(stderr, "PID: %d\tAvventer forespørsel...\n\n", getpid());
+
+    while (1)
     {
-        fprintf(stderr, "Daemon PID: %d\nDaemon: Avventer forespørsel...\n\n", getpid());
-
-        while (1)
+        // Aksepterer mottatt forespørsel og lagrer i socket-descriptor
+        request_sd = accept(sd, NULL, NULL);
+        if (request_sd < 0)
         {
-            // Aksepterer mottatt forespørsel og lagrer i socket-descriptor
-            request_sd = accept(sd, NULL, NULL);
-            if (request_sd < 0)
-            {
-                perror("accept");
-                exit(1);
-            }
+            perror("accept");
+            exit(1);
+        }
 
-            fprintf(stderr, "Daemon: Forespørsel mottatt. Forker prosess...\n");
+        fprintf(stderr, "PID: %d\tForespørsel mottatt. Forker prosess...\n", getpid());
 
-            // Re-diriger socket til stdin
-            if (dup2(request_sd, 1) < 0)
-            {
-                perror("dup2");
-                exit(1);
-            }
+        // Re-diriger socket til stdin
+        if (dup2(request_sd, 1) < 0)
+        {
+            perror("dup2");
+            exit(1);
+        }
 
-            if (0 == fork())
-            {
-                fprintf(stderr, "Fork PID: %d\n%d: Starter request handler...\n---Request---\n", getpid(), getpid());
-                
-                request_handler(request_sd);
+        if (0 == fork())
+        {
+            fprintf(stderr, "Fork PID: %d\n%d: Starter request handler...\n---Request---\n", getpid(), getpid());
+            
+            request_handler(request_sd);
 
-                // Stenger read/write endene av socket
-                fprintf(stderr, "%d: Stenger socket og avslutter fork\n", getpid());
-                shutdown(request_sd, SHUT_RDWR);
-                exit(0);
-            }
-            else
-            {
-                // Lukker socket før prosessen avsluttes
-                close(request_sd);
-            }
+            // Stenger read/write endene av socket
+            fprintf(stderr, "%d: Stenger socket og avslutter fork\n", getpid());
+            shutdown(request_sd, SHUT_RDWR);
+            exit(0);
+        }
+        else
+        {
+            // Lukker socket før prosessen avsluttes
+            close(request_sd);
         }
     }
-    else
-    {
-        exit(0);
-    }
+
 
     close(log_fd);
     return 0;
@@ -212,7 +219,7 @@ void request_handler(int request_sd)
             strcpy(filetype, "html");
             fprintf(stderr, "HTTP Filepath: %s og Filetype: %s\n", filepath, filetype);
         } 
-        else
+        else if (strchr(filepath, '.') != NULL) 
         {
             // Itererer over filstien til siste punktum, for å peke til filtype
             strtok(filepath, ".");
@@ -223,6 +230,9 @@ void request_handler(int request_sd)
             filetype=malloc(strlen(pointer)+sizeof('\0'));
             strcpy(filetype, pointer);
             fprintf(stderr, "HTTP Filetype: %s\n", filetype);
+        } 
+        else {
+            bad_request();
         }
 
         // Sjekker om metoden er GET, ellers send bad request
@@ -259,11 +269,20 @@ void response_handler(int response_sd, char *requested_filepath, char *requested
         fprintf(stderr, "%d: Filtype er asis, setter content-type til asis\n", getpid());
         content_type = malloc(strlen("asis")+sizeof('\0'));
         strcpy(content_type, "asis");
+    } else if (strcmp(requested_filetype , "xsd") == 0)
+    {   
+        fprintf(stderr, "%d: Filtype er xsd, setter content-type til text/xml\n", getpid());
+        content_type = malloc(strlen("text/xml")+sizeof('\0'));
+        strcpy(content_type, "text/xml");
     }  
-    else   
+    else if (!is_daemon)      
     {
         fprintf(stderr, "%d: Forespurt filtype er ikke asis, sjekker om filtype er i mime.tpyes\n", getpid());
         content_type = mime_types_check(requested_filetype);
+    }
+    else 
+    {
+        not_found(file);    
     }
 
     fprintf(stderr, "%d: Forespurt filtype: %s, content-type: %s\n", getpid(), requested_filetype, content_type);
@@ -294,15 +313,19 @@ void response_handler(int response_sd, char *requested_filepath, char *requested
         else
         {
             fprintf(stderr, "%d: Filen %s finnes, sender den\n", getpid(), file);
+            
+                
             while ((bytes_file = read(response_fd, response_buffer, sizeof(response_buffer))) > 0)
             {
-                printf("HTTP/1.1 200 OK\r\n"
-                       "Content-Length: %d\r\n"
-                       "Content-Type: %s\r\n"
-                       "Access-Control-Allow-Origin: *\r\n"
-                       "\r\n", bytes_file, content_type);
-                
-                fflush(stdout);
+                if ( ! strcmp(content_type, "asis") == 0) {
+                    printf("HTTP/1.1 200 OK\r\n"
+                            "Content-Length: %d\r\n"
+                            "Content-Type: %s\r\n"
+                            "Access-Control-Allow-Origin: *\r\n"
+                            "\r\n", bytes_file, content_type);
+                    
+                    fflush(stdout);
+                }
 
                 write(response_sd, response_buffer, bytes_file);
             }
@@ -420,7 +443,7 @@ void mime_types_linked_list()
 /* Dissasosierer prosessen fra terminalen, begrenser rettigheter og endrer root- og arbeidskatalog */
 void disassosiate()
 {
-    fprintf(stderr, "Endrer sid, euid, root og arbeidsdir\n");
+    fprintf(stderr, "Endrer root og arbeidsdir\n");
 
     // Setter arbeidskatalogen til root-katalogen
     if (chdir(TARGET_DIR) != 0)
@@ -438,6 +461,12 @@ void disassosiate()
 
     if (is_daemon) {
 
+        fprintf(stderr, "Demoniserer\n");
+
+        if (0 != fork()) {
+            exit(0);
+        }
+
         // Lager ny session og setter prosessen som leder av den nye sessionen
         if (setsid() < 0)
         {
@@ -446,6 +475,11 @@ void disassosiate()
 
         }
 
+        // Ignorerer SIGCHLD og SIGHUP for å henholdsvis unngå zombie-prosesser,
+        // samt for å unngå å bli lagt i bakgrunnen.
+        signal(SIGCHLD, SIG_IGN);
+        signal(SIGHUP, SIG_IGN);
+
         // Setter euid til en ikke-privilegert bruker.
         if (seteuid(1000) < 0)
         {
@@ -453,12 +487,11 @@ void disassosiate()
             exit(1);
         }
 
+        if (0 != fork()) {
+            exit(0);
+        }
     }
 
-    // Ignorerer SIGCHLD og SIGHUP for å henholdsvis unngå zombie-prosesser,
-    // samt for å unngå å bli lagt i bakgrunnen.
-    signal(SIGCHLD, SIG_IGN);
-    signal(SIGHUP, SIG_IGN);
 }
 
 // Slår sammen filsti og filtpye til en string 
@@ -535,8 +568,8 @@ void mode_handler()
     {
         //fprintf(stderr, "Making daemon adjustments...\n");
         is_daemon = 1;
-        TARGET_DIR = "/opt/web_server/var/www";
-        LOG_FILE = "/opt/web_server/var/log/web_tjener.log";
-        LOCAL_PORT = 80;
+        TARGET_DIR = "/opt/Dikt_webapp/var/www";
+        LOG_FILE = "/opt/Dikt_webapp/var/log/web_tjener.log";
+        LOCAL_PORT = 8000;
     }
 }

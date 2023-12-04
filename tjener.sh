@@ -11,13 +11,18 @@ CONTAINER_PID=$(ps aux | grep "init$" | grep -v grep | grep -v sbin | awk '{prin
 # Unshare-konteiner som kjøres som en upriviligert bruker
 unshare_tjener () {
     # Oppretter mapper for container
-    mkdir -p $ROTFS/bin $ROTFS/proc $ROTFS/var/www $ROTFS/var/log $ROTFS/etc
+    mkdir -p $ROTFS/bin $ROTFS/proc $ROTFS/var/www $ROTFS/var/log $ROTFS/etc 
+
+
 
     # Kopierer filer fra host til container
     cp      /bin/busybox $ROTFS/bin/
-    cp -pr  /opt/Dikt_webapp/var/www/* $ROTFS/var/www/ ; chmod -rwx $ROTFS/var/www/jail.asis
-    cp      /etc/mime.types $ROTFS/etc/ #; chmod +r $ROTFS/etc/mime.types
-    gcc -static -o $ROTFS/bin/tjener $ROTFS/../mptjener.c
+    cp -pr  /opt/Dikt_webapp/var/www/* $ROTFS/var/www/ 
+    chmod -rwx $ROTFS/var/www/jail.asis
+    chmod -R +rw $ROTFS/var/
+
+    cp      /etc/mime.types $ROTFS/etc/ 
+    gcc -static -o $ROTFS/bin/tjener $WRKDIR/mptjener.c
 
     # Oppretter busybox linker
     cd      $ROTFS/bin/
@@ -25,19 +30,9 @@ unshare_tjener () {
         ln -s busybox $P
     done
 
-    cat << EOF > $ROTFS/etc/initconf.sh
-#!/bin/sh
-# More startup configurations for container
-#mount -t proc none /proc
-EOF
-
-    chmod +x $ROTFS/etc/initconf.sh
-
-    # Oppretter inittab kall
     echo "::once:/bin/tjener" > $ROTFS/etc/inittab
-    echo "::once:/etc/initconf.sh" >> $ROTFS/etc/inittab
-
-
+    # For shell:
+    #echo "::once:/bin/sh" >> $ROTFS/etc/inittab
 
     # Starter konteiner
     PATH=/bin           \
@@ -50,7 +45,8 @@ EOF
         --cgroup        \
         --ipc           \
         --uts           \
-        /usr/sbin/chroot $ROTFS bin/init &
+        --mount-proc    \
+        --root $ROTFS bin/init &
 }
 
 # Dreper web_tjener prosessen, enten i daemon eller container modus
@@ -94,7 +90,7 @@ start_tjener () {
             gcc $WRKDIR/mptjener.c -o $WRKDIR/web_tjener
             echo "Starter web_tjener..."
             $WRKDIR/web_tjener
-            sleep 1
+            sleep 5
             rm $WRKDIR/web_tjener
         elif [ $MODE = "container" ]; then
             unshare_tjener

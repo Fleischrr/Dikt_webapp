@@ -3,18 +3,18 @@
 
 <gruppe>
     <medlem> 
-        <navn> Knut Olav </navn>
+        <navn> Hans </navn>
         <alder> 23 </alder>
-        <beskrivelse> Søt og snill </beskrivelse>
+        <beskrivelse> Surnadal </beskrivelse>
     </medlem>
     <medlem>
-        <navn> Per </navn>
-        <alder> 25 </alder>
-        <beskrivelse> Stygg og snill </beskrivelse>
+        <navn> Sander </navn>
+        <alder> 22 </alder>
+        <beskrivelse> Ytre Enebakk </beskrivelse>
     </medlem>
     <medlem>
-        <navn> Arne </navn>
-        <alder> 27 </alder>
-        <beskrivelse> Stygg og slem </beskrivelse>
+        <navn> Håkon </navn>
+        <alder> 24 </alder>
+        <beskrivelse> Mo i Rana </beskrivelse>
     </medlem>
 </gruppe>
