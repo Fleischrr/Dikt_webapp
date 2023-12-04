@@ -167,7 +167,7 @@ fi
 if [ "$REQUEST_METHOD" = "GET" ] && [ "$LOGGED_IN" -eq 1 ] && echo "$QUERY_STRING" | grep -q "^logout="; then
 
     # Send forespørsel til backend server
-    CURL_OUTPUT=$(curl -s -X DELETE "http://172.20.0.2/Diktdatabase/Bruker/" \
+    CURL_OUTPUT=$(curl -s -X DELETE "http://172.20.0.2/Diktdatabase/Sesjon/" \
         -H "Cookie: $HTTP_COOKIE" \
         -H "accept: text/xml")
 

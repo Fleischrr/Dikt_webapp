@@ -403,6 +403,35 @@ elif [ "$tabell" = "Bruker" ]; then
 
     fi
 
+
+    # ----  PUT  ---- #
+    # - Validere cookie - #
+    if [ "$REQUEST_METHOD" = "PUT" ]; then
+        
+        # Sjekker om cookie er satt
+        if [ -z "$HTTP_COOKIE" ]; then
+            ERROR_MSG "<ERROR><text> Du er ikke logget inn! </text></ERROR>"
+        else
+
+            # Sjekker cookie gyldighet
+            session_cookie=$(echo "$HTTP_COOKIE" | sed 's/session=\([^;]*\).*/\1/')
+            
+            if ! echo "SELECT * FROM Sesjon WHERE SesjonsID = '$session_cookie';" | sqlite3 $database | grep -qE '^' ; then
+                ERROR_MSG "<ERROR><text> Session-cookie er ikke gyldig! </text></ERROR>"
+            fi
+
+            # -- RESPONSE -- #
+            # Header
+            write_header
+
+            # Body
+            echo "<message><text> Gyldig cookie! </text></message>"
+        fi
+
+    fi
+
+elif [ "$tabell" = "Sesjon" ]; then
+    
     # ----  DELETE  ---- #
     # - Logg ut - #
     if [ "$REQUEST_METHOD" = "DELETE" ]; then
@@ -431,33 +460,8 @@ elif [ "$tabell" = "Bruker" ]; then
             # Body
             echo "<message><text> Du er nå logget ut! </text></message>"
         fi
-
-    fi
-
-    # ----  PUT  ---- #
-    # - Validere cookie - #
-    if [ "$REQUEST_METHOD" = "PUT" ]; then
-        
-        # Sjekker om cookie er satt
-        if [ -z "$HTTP_COOKIE" ]; then
-            ERROR_MSG "<ERROR><text> Du er ikke logget inn! </text></ERROR>"
-        else
-
-            # Sjekker cookie gyldighet
-            session_cookie=$(echo "$HTTP_COOKIE" | sed 's/session=\([^;]*\).*/\1/')
-            
-            if ! echo "SELECT * FROM Sesjon WHERE SesjonsID = '$session_cookie';" | sqlite3 $database | grep -qE '^' ; then
-                ERROR_MSG "<ERROR><text> Session-cookie er ikke gyldig! </text></ERROR>"
-            fi
-
-            # -- RESPONSE -- #
-            # Header
-            write_header
-
-            # Body
-            echo "<message><text> Gyldig cookie! </text></message>"
-        fi
-
+    else
+        ERROR_MSG "<ERROR><text> Ugyldig forespørsel til Sesjons-tabelle! </text></ERROR>"
     fi
 
 else

@@ -234,6 +234,7 @@ void request_handler(int request_sd)
         else 
         {
             fprintf(stderr, "\n\n%d: Gyldig forespørsel mottatt, etterspurt fil: %s\n", getpid(), filepath);
+
             response_handler(request_sd, filepath, filetype);
         }
 
@@ -248,7 +249,7 @@ void response_handler(int response_sd, char *requested_filepath, char *requested
     char *file;
     char *content_type;
     int bytes_file, response_fd;
-    char response_buffer[BUFSIZ];
+    char response_buffer[10000];
 
     file = concat_file_and_type(requested_filepath, requested_filetype);
     
@@ -295,6 +296,14 @@ void response_handler(int response_sd, char *requested_filepath, char *requested
             fprintf(stderr, "%d: Filen %s finnes, sender den\n", getpid(), file);
             while ((bytes_file = read(response_fd, response_buffer, sizeof(response_buffer))) > 0)
             {
+                printf("HTTP/1.1 200 OK\r\n"
+                       "Content-Length: %d\r\n"
+                       "Content-Type: %s\r\n"
+                       "Access-Control-Allow-Origin: *\r\n"
+                       "\r\n", bytes_file, content_type);
+                
+                fflush(stdout);
+
                 write(response_sd, response_buffer, bytes_file);
             }
 
