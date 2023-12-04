@@ -293,9 +293,9 @@ elif [ "$tabell" = "Bruker" ]; then
     # ---- ---- ---- ---- #
     # ---- BRUKER TABELL ---- #
     
-    # ----  GET  ---- #
+    # ----  POST  ---- #
     # - Logg inn - #
-    if [ "$REQUEST_METHOD" = "GET" ]; then
+    if [ "$REQUEST_METHOD" = "POST" ]; then
         
         # XML Validasjon
         XSD_FILE="${XSD_ROOT}login_schema.xsd"
@@ -338,7 +338,7 @@ elif [ "$tabell" = "Bruker" ]; then
 
             # -- RESPONSE -- #
             # Header
-            echo "Set-Cookie: session=$session_cookie; HttpOnly"
+            echo "Set-Cookie: session=$session_cookie; Path=/"
             write_header
 
             # Body
@@ -351,7 +351,7 @@ elif [ "$tabell" = "Bruker" ]; then
 
     # ----  POST  ---- #
     # - Registrer bruker - #
-    if [ "$REQUEST_METHOD" = "POST" ]; then
+    if [ "$REQUEST_METHOD" = "" ]; then
         
         # XML Validasjon
         XSD_FILE="${XSD_ROOT}bruker_schema.xsd"
@@ -391,7 +391,7 @@ elif [ "$tabell" = "Bruker" ]; then
             
             # -- RESPONSE -- #
             # Header
-            echo "Set-Cookie: session=$session_cookie; HttpOnly"
+            echo "Set-Cookie: session=$session_cookie; Path=/"
             write_header
             
             # Body

@@ -24,6 +24,7 @@ self.addEventListener('install', function(event) {
 // Event som blir trigget når serviceworker blir aktivert
 self.addEventListener('fetch', function(event) {
     
+<<<<<<< HEAD
     // Responderer med nettverks forespørsel
     event.respondWith(
         fetch(event.request).catch(function() {
@@ -32,6 +33,14 @@ self.addEventListener('fetch', function(event) {
             return caches.match(event.request);
         })
             
+=======
+    // Sjekk om request finnes i mellomlagringen, hvis ikke hent fra nettet
+    event.respondWith(
+        caches.match(event.request)
+            .then(function(cachedResponse) {
+                return cachedResponse || fetch(event.request);
+            })
+>>>>>>> 82d60314c6bd8b66ff789654fb6bb6fe14cb6dc3
     );
 });
 

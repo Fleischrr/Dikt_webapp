@@ -6,7 +6,7 @@
 WRKDIR=/opt/Dikt_webapp
 ROTFS="/opt/Dikt_webapp/container"
 DAEMON_PID=$(ps aux | grep "./web_tjener" | grep -v grep | awk '{print $2}')
-CONTAINER_PID=$(ps aux | grep "init" | grep -v grep | grep -v sbin | awk '{print $2}')
+CONTAINER_PID=$(ps aux | grep "init$" | grep -v grep | grep -v sbin | awk '{print $2}')
 
 # Unshare-konteiner som kjøres som en upriviligert bruker
 unshare_tjener () {
@@ -91,14 +91,12 @@ start_tjener () {
 
     if [ -z "$DAEMON_PID" ] && [ -z "$CONTAINER_PID" ]; then
         if [ $MODE = "daemon" ]; then
-            stop_reverse_proxy
             gcc $WRKDIR/mptjener.c -o $WRKDIR/web_tjener
             echo "Starter web_tjener..."
             $WRKDIR/web_tjener
             sleep 1
             rm $WRKDIR/web_tjener
         elif [ $MODE = "container" ]; then
-            start_reverse_proxy
             unshare_tjener
         else
             echo "Usage: ./tjener.sh start [daemon|container]"
@@ -122,24 +120,6 @@ restart_tjener () {
     kill_tjener
     sleep 2
     start_tjener $MODE
-}
-
-
-start_reverse_proxy () {
-    # Check if Apache is already running
-    if ! systemctl is-active --quiet apache2; then
-        echo "Apache is not running. Port 80 is not open. But 8080 is."
-    fi
-}
-
-stop_reverse_proxy() {
-    # Check if Apache is running
-    if systemctl is-active --quiet apache2; then
-        # Stop Apache
-        echo "Stopping reverse-proxy..."
-        a2dissite reverse-proxy.conf
-        sleep 0.66
-    fi
 }
 
 if [ "$1" = "kill" ] || [ "$1" = "stop" ]; then
