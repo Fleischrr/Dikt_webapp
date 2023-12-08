@@ -1,7 +1,5 @@
 #!/bin/sh
 # Restfull API for SQLite-databaser
-# Dato: 13.10.2023
-# Updated: 27.10.2023
 # ---- ---- ---- ---- ---- ---- ---- #
 
 # GLOBAL Variabler

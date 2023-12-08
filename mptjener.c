@@ -10,7 +10,7 @@
 #include <sched.h>
 
 #define BACK_LOG 10
-#define REQUEST_SIZ 100 // satt til 100 for å kun lese nødvendige ting fra headeren
+#define REQUEST_SIZ 100 
 
 void log_controller();
 void mode_handler();
@@ -31,7 +31,7 @@ char *LOG_FILE = "/var/log/web_tjener.log";
 int log_fd;
 int is_daemon = 0;
 
-// linked list for å kopiere inn mime.types
+// linked-list struktur for å kopiere inn mime.types
 struct mime_end_and_type {
     char *end;
     char *type;
@@ -43,23 +43,26 @@ struct mime_end_and_type *ll_head;
 
 int main()
 {
-
-    // Forhindrer zombie prosesser
-    struct sigaction sigchld_action = {
-        .sa_handler = SIG_DFL,
-        .sa_flags = SA_NOCLDWAIT
-    };
-    
-    sigaction(SIGCHLD, &sigchld_action, NULL);
-
-    mode_handler();
-    log_controller();
     struct sockaddr_in loc_addr;
     int sd, request_sd;
     int request_len;
     char request_buffer[REQUEST_SIZ];
     char response_buffer[BUFSIZ];
     ll_head = malloc(sizeof(struct mime_end_and_type));
+
+    // Setter modus og initialiserer logging
+    mode_handler();
+    log_controller();
+
+    // Forhindrer zombie prosesser
+    struct sigaction sigchld_action = {
+        
+        // Setter default signal til å ha flagg som reaper child prosesser
+        .sa_handler = SIG_DFL,
+        .sa_flags = SA_NOCLDWAIT
+    };
+    
+    sigaction(SIGCHLD, &sigchld_action, NULL);
 
     // Redirigerer stderr til log-discriptoren
     if (dup2(log_fd, 2) < 0)
@@ -68,82 +71,81 @@ int main()
         exit(1);
     }
 
+    fprintf(stderr, "Starter tjener med PID: %d\n", getpid());
 
-    fprintf(stderr, "Starter tjener\n");
-
-    // Setter opp socket-strukturen
+    // Setter opp socket-strukturen.
     if ( (sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0 )
     {
         perror("socket");
         exit(1);
     }
 
-    // For at operativsystemet ikke skal holde porten reservert etter tjenerens død
+    // Aktiverer SO_REUSEADDR for å tillate gjenbruk av socket ved omstart av tjener
     if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
     {
         perror("setsockopt");
         exit(1);
     }
 
-    // Initierer lokal adresse
+    // Initierer lokal adresse (BE 16/32-bit)
     loc_addr.sin_family = AF_INET;
     loc_addr.sin_port = htons((__u_short)LOCAL_PORT);
     loc_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-
-    // Kobler sammen socket og lokal adresse
+    // Kobler sammen socket med strukturen deklarert ovenfor
     if (bind(sd, (struct sockaddr *)&loc_addr, sizeof(loc_addr)) < 0)
     {
         perror("bind");
         exit(1);
     }
 
-    fprintf(stderr, "Prosess %d er knyttet til port %d.\n", getpid(), LOCAL_PORT);
-
-    // Gjør socket passiv, dvs. klar til å motta forespørselser
+    // Gjør socket passiv, aksepterer forespørsler og setter opp en kø
     if (listen(sd, BACK_LOG) < 0)
     {
         perror("listen");
         exit(1);
     }
 
+    fprintf(stderr, "PID: %d\tKnyttet til port %d.\n", getpid(), LOCAL_PORT);
+
     if (!is_daemon) 
     {
-        fprintf(stderr, "Prosess %d er ikke en daemon, kopierer mime.tpyes...\n", getpid());
+        // Hvis ikke daemon, kopierer mime.types inn i linked-list  
+        fprintf(stderr, "PID: %d\tIkke en daemon, kopierer mime.tpyes...\n", getpid());
         mime_types_linked_list();
-        fprintf(stderr, "mime.types kopiert\n");
+        fprintf(stderr, "PID: %d\tmime.types kopiert\n", getpid());
     } 
-
 
     // Endrer arbeidskatalog og Demoniserer web-tjeneren
     disassosiate();
     
-
-    fprintf(stderr, "PID: %d\tAvventer forespørsel...\n\n", getpid());
+    fprintf(stderr, "PID: %d\tOppsett fullført. Avventer forespørsel...\n\n", getpid());
 
     while (1)
     {
-        // Aksepterer mottatt forespørsel og lagrer i socket-descriptor
+        // Aksepterer mottatt forespørsel på socket og lagrer descriptor
         request_sd = accept(sd, NULL, NULL);
+        
         if (request_sd < 0)
         {
             perror("accept");
             exit(1);
         }
 
-        fprintf(stderr, "PID: %d\tForespørsel mottatt. Forker prosess...\n", getpid());
-
-        // Re-diriger socket til stdin
+        // Re-diriger stdout til socket 
         if (dup2(request_sd, 1) < 0)
         {
             perror("dup2");
             exit(1);
         }
 
+        fprintf(stderr, "PID: %d\tForespørsel mottatt. Forker prosess...\n", getpid());
+
         if (0 == fork())
         {
             fprintf(stderr, "Fork PID: %d\n%d: Starter request handler...\n---Request---\n", getpid(), getpid());
             
+            // Håndterer forespørsel
             request_handler(request_sd);
 
             // Stenger read/write endene av socket
@@ -153,18 +155,17 @@ int main()
         }
         else
         {
-            // Lukker socket før prosessen avsluttes
+            // Lukker socket i foreldre-prosessen
             close(request_sd);
         }
     }
-
 
     close(log_fd);
     return 0;
 }
 
 
-// Håndterer lesing av http forespørsler og starter response_handler
+// Håndterer lesing av forespørsler og oppstart av response_handler
 void request_handler(int request_sd)
 {
     char *pointer;
@@ -177,7 +178,7 @@ void request_handler(int request_sd)
     char request_string[REQUEST_SIZ];
     char requested_file[257];
 
-    // Leser inn forespørsel
+    // Leser inn forespørsel fra socket og skriver til log-fil
     request_len = read(request_sd, request_string, REQUEST_SIZ);
     write(log_fd, request_string, request_len);
     
@@ -190,7 +191,7 @@ void request_handler(int request_sd)
         // Setter pointer til starten av forespørselen
         pointer = request_string;
 
-        // Henter forespørselen 
+        // Henter forespørselen og lagrer i request_string
         request = malloc(strlen(request_string)+sizeof('\0'));
         strcpy(request, request_string);
 
@@ -200,40 +201,40 @@ void request_handler(int request_sd)
         // Lagrer http metode
         method = malloc(strlen(pointer)+sizeof('\0'));
         strcpy(method, pointer);
-        fprintf(stderr, "\n\nHTTP Method: %s\n", method);
+        fprintf(stderr, "\n\n%d: HTTP Method: %s\n", getpid(), method);
 
-        // Neste whitespace
+        // Peker til neste whitespace, altså på starten av http filsti
         pointer = strtok(NULL, " ");
 
         // Lagrer http filsti
         filepath=malloc(strlen(pointer)+sizeof('\0'));
         strcpy(filepath, pointer);
 
-
-        // Sjekker om filsti er default, eller om den er tom, setter til index.html
+        // Sjekker filsti og henter ut filtype
         if (strcmp(filepath, "/") == 0 || strlen(filepath) < 1)
         {
+            // Hvis filsti er default, eller om den er tom, setter til index.html
             strcpy(filepath, "index"); 
 
             filetype=malloc(strlen("html")+sizeof('\0'));
             strcpy(filetype, "html");
-            fprintf(stderr, "HTTP Filepath: %s og Filetype: %s\n", filepath, filetype);
         } 
         else if (strchr(filepath, '.') != NULL) 
         {
-            // Itererer over filstien til siste punktum, for å peke til filtype
+            // Hvis filsti inneholder punktum. Itererer over filstien til siste punktum, for å peke til filtype
             strtok(filepath, ".");
             pointer = strtok(NULL, ".");
-            fprintf(stderr, "HTTP Filepath: %s\n", filepath);
-            
-            // Lagrer http filtype
+                        
+            // Lagrer filtype
             filetype=malloc(strlen(pointer)+sizeof('\0'));
             strcpy(filetype, pointer);
-            fprintf(stderr, "HTTP Filetype: %s\n", filetype);
         } 
-        else {
+        else 
+        {
             bad_request();
         }
+
+        fprintf(stderr, "%d: HTTP Filepath: %s og Filetype: %s\n", getpid(), filepath, filetype);
 
         // Sjekker om metoden er GET, ellers send bad request
         if (strcmp(method, "GET") != 0)
@@ -244,7 +245,6 @@ void request_handler(int request_sd)
         else 
         {
             fprintf(stderr, "\n\n%d: Gyldig forespørsel mottatt, etterspurt fil: %s\n", getpid(), filepath);
-
             response_handler(request_sd, filepath, filetype);
         }
 
@@ -253,7 +253,7 @@ void request_handler(int request_sd)
 }
 
 
-// Håndterer svar til klienten-forespørseler 
+// Håndterer responsen til klienten
 void response_handler(int response_sd, char *requested_filepath, char *requested_filetype)
 {
     char *file;
@@ -261,22 +261,27 @@ void response_handler(int response_sd, char *requested_filepath, char *requested
     int bytes_file, response_fd;
     char response_buffer[10000];
 
+    // Slår sammen filsti og filtype til en string
     file = concat_file_and_type(requested_filepath, requested_filetype);
     
-    // Sjekker om filtype er asis, hvis ja, setter content-type til asis, ellers sjekk mime.types
+    
     if (strcmp(requested_filetype , "asis") == 0)
     {   
+        // Hvis filtype er asis, setter content-type til asis
         fprintf(stderr, "%d: Filtype er asis, setter content-type til asis\n", getpid());
         content_type = malloc(strlen("asis")+sizeof('\0'));
         strcpy(content_type, "asis");
-    } else if (strcmp(requested_filetype , "xsd") == 0)
+    } 
+    else if (strcmp(requested_filetype , "xsd") == 0)
     {   
+        // Hvis filtype er xsd, setter content-type til text/xml
         fprintf(stderr, "%d: Filtype er xsd, setter content-type til text/xml\n", getpid());
         content_type = malloc(strlen("text/xml")+sizeof('\0'));
         strcpy(content_type, "text/xml");
     }  
     else if (!is_daemon)      
     {
+        // Hvis ikke daemon, sjekker om filtype er i mime.types
         fprintf(stderr, "%d: Forespurt filtype er ikke asis, sjekker om filtype er i mime.tpyes\n", getpid());
         content_type = mime_types_check(requested_filetype);
     }
@@ -287,37 +292,42 @@ void response_handler(int response_sd, char *requested_filepath, char *requested
 
     fprintf(stderr, "%d: Forespurt filtype: %s, content-type: %s\n", getpid(), requested_filetype, content_type);
 
-    // Sjekker om forespurt fil type er støttet
-    if ( strlen(content_type) <= 1 )
+    
+    if ( strlen(content_type) < 1 )
     {
         bad_request();
     } 
     else 
     {
-
+        // Hvis content_type finnes, håndter fil og respons
         fprintf(stderr, "%d: Forespurt fil: %s\n", getpid(), file);
-        // Sjekker om det er mulig å åpne filen, hvis ja, send filen, hvis nei, send riktig HTTP error
+                
+        
         if ((response_fd = open(file, O_RDONLY)) == -1)
         {
-            // Sjekker tilatelsen til filen, og sender riktig HTTP error
+            // Hvis fil åpning feiler, sjekk errno
             if (errno == EACCES)
             {
+                // Ikke tilgang til fil
                 bad_permission(file);
             }
             else
             {
+                // Filen finnes ikke
                 not_found(file);
             }
 
         }
         else
         {
+            // Filen finnes, leser og sender respons
             fprintf(stderr, "%d: Filen %s finnes, sender den\n", getpid(), file);
-            
-                
+                        
             while ((bytes_file = read(response_fd, response_buffer, sizeof(response_buffer))) > 0)
             {
                 if ( ! strcmp(content_type, "asis") == 0) {
+                    
+                    // Skriv header hvis ikke filtype er asis   
                     printf("HTTP/1.1 200 OK\r\n"
                             "Content-Length: %d\r\n"
                             "Content-Type: %s\r\n"
