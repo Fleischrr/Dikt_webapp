@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Author: Hans Fleischer 01/09/2023
+# Created: 01/09/2023
 # Skript for å håndtere start/stop/debug av web_tjener.
 # Finner PID til ./web_tjener og dreper den med kill-kommandoen, eller
 # kompilerer og starter web_tjener i debug eller standard modus.
@@ -12,8 +12,6 @@ CONTAINER_PID=$(ps aux | grep "init$" | grep -v grep | grep -v sbin | awk '{prin
 unshare_tjener () {
     # Oppretter mapper for container
     mkdir -p $ROTFS/bin $ROTFS/proc $ROTFS/var/www $ROTFS/var/log $ROTFS/etc 
-
-
 
     # Kopierer filer fra host til container
     cp      /bin/busybox $ROTFS/bin/
@@ -47,6 +45,44 @@ unshare_tjener () {
         --uts           \
         --mount-proc    \
         --root $ROTFS bin/init &
+
+    #--user: nytt navnrom 
+    #--map-root-user: kjørende bruker blir root i konteiner
+    #--fork: forkes
+    #--pid: nytt PID navnrom
+    #--mount: nytt mount navnrom
+    #--cgroup: nytt cgroup navnrom
+    #--ipc: nytt IPC navnrom
+    #--uts: nytt UTS navnrom
+    #--mount-proc: monterer /proc i konteiner
+    #--root: change root til $ROTFS
+        
+}
+
+start_tjener () {
+    local MODE=$1
+
+    if [ -z "$DAEMON_PID" ] && [ -z "$CONTAINER_PID" ]; then
+
+        if [ $MODE = "daemon" ]; then
+            gcc $WRKDIR/mptjener.c -o $WRKDIR/web_tjener
+            echo "Starter web_tjener..."
+            $WRKDIR/web_tjener
+            sleep 5
+            rm $WRKDIR/web_tjener
+
+        elif [ $MODE = "container" ]; then
+            unshare_tjener
+
+        else
+            echo "Usage: ./tjener.sh start [daemon|container]"
+        fi
+
+    else
+        echo "Web_tjener kjører allerede med PID: $DAEMON_PID $CONTAINER_PID"
+        exit 0
+    fi
+    
 }
 
 # Dreper web_tjener prosessen, enten i daemon eller container modus
@@ -66,7 +102,6 @@ kill_tjener () {
         echo "Stopper web_tjener container med PID: $CONTAINER_PID"
     else
         echo "Ingen web_tjener å stoppe!"
-        # Force flag for å slette container
         rm -rf $ROTFS
     fi
 }
@@ -82,47 +117,13 @@ status_tjener () {
     fi
 }
 
-start_tjener () {
-    local MODE=$1
-
-    if [ -z "$DAEMON_PID" ] && [ -z "$CONTAINER_PID" ]; then
-        if [ $MODE = "daemon" ]; then
-            gcc $WRKDIR/mptjener.c -o $WRKDIR/web_tjener
-            echo "Starter web_tjener..."
-            $WRKDIR/web_tjener
-            sleep 5
-            rm $WRKDIR/web_tjener
-        elif [ $MODE = "container" ]; then
-            unshare_tjener
-        else
-            echo "Usage: ./tjener.sh start [daemon|container]"
-        fi
-    else
-        echo "Web_tjener kjører allerede med PID: $DAEMON_PID $CONTAINER_PID"
-        exit 0
-    fi
-}
-
-restart_tjener () {
-    if [ -n "$DAEMON_PID" ]; then
-        local MODE="daemon"
-    elif [ -n "$CONTAINER_PID" ] ; then
-        local MODE="container"
-    else
-        echo "Ingen web_tjener kjører!"
-        exit 0
-    fi
-
-    kill_tjener
-    sleep 2
-    start_tjener $MODE
-}
 
 if [ "$1" = "kill" ] || [ "$1" = "stop" ]; then
     kill_tjener
 elif [ "$1" = "status" ]; then
     status_tjener
 elif [ "$1" = "start" ]; then
+
     if [ "$2" = "daemon" ] && [ "$EUID" -eq 0 ]; then
         start_tjener daemon
     elif [ "$2" = "container" ]; then
@@ -130,8 +131,7 @@ elif [ "$1" = "start" ]; then
     else
         echo "Usage: ./tjener.sh start [container|daemon(sudo)]"
     fi
-elif [ "$1" = "restart" ]; then
-    restart_tjener
+
 else
     echo "Usage: ./tjener.sh [{start container(non-sudo)|daemon(sudo)} | {kill|stop} | status | restart]"
 fi

@@ -63,8 +63,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }  
     }
     
+    function serviceWorkerSjekk() {
+        if( ! ( 'serviceWorker' in navigator) ) 
+
+            alert ('"ServiceWorker" er ikke stoettet');
+
+        else {
+
+            navigator.serviceWorker.register('serviceArbeider.js').then  (
+                function (reg)     { alert ('Installasjon fullført')     } ).catch (
+                function (err)     { alert ('Innstallasjon feilet:'+err) }
+                );
+        }
+    }
+
     // Sjekker login status ved lasting av side
     checkLoginStatus()
+    serviceWorkerSjekk()
     
     
     // Vis spesifisert dikt
@@ -236,5 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         xhr.send();
     });
+
+    
    
 });

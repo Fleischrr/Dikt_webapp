@@ -162,8 +162,9 @@ if [ "$TABELL" = "Diktsamling" ]; then
                 fi
 
             fi
-            ;;
+        ;;
         DELETE)
+
             # ----  Slette dikt fra samlingen  ---- #
 
             # Sjekker om bruker er logget inn
@@ -185,6 +186,7 @@ if [ "$TABELL" = "Diktsamling" ]; then
                     WRITE_HEADER
                     STD_MSG "Alle dikt til bruker $EPOST er slettet!"
                 fi
+
             else
                 # Hvis element ikke er tom, slett spesifikt dikt
 
@@ -208,7 +210,7 @@ if [ "$TABELL" = "Diktsamling" ]; then
                 fi
 
             fi
-            ;;
+        ;;
         POST)
             # ----  Sende inn dikt til diktsamlingen  ---- #
 
@@ -256,12 +258,14 @@ if [ "$TABELL" = "Diktsamling" ]; then
                 echo -n "<Tittel> $tittel </Tittel>"
                 echo -n "<Epost> $EPOST </Epost>"
                 echo -n "<Tekst> $tekst </Tekst></Message>"
-                exit 0
+
             else
                 ERROR_MSG "XML er ikke validert!"
             fi
-            ;;
+
+        ;;
         PUT)
+
             # ----  Oppdatere dikt i diktsamlingen  ---- #
 
             # Sjekker om bruker er logget inn
@@ -316,10 +320,11 @@ if [ "$TABELL" = "Diktsamling" ]; then
             else
                 ERROR_MSG "XML er ikke validert!"
             fi
-            ;;
+
+        ;;
         *)
             ERROR_MSG "Ugyldig forespørsel mot Diktsamling!"
-            ;;
+        ;;
     esac
 
 # ---- --- ---- ---- ---- #
@@ -328,6 +333,7 @@ elif [ "$TABELL" = "Bruker" ]; then
     
     case "$REQUEST_METHOD" in
         POST)
+
             # ----  Logg inn  ---- #
                     
             # XML Validasjon
@@ -376,11 +382,14 @@ elif [ "$TABELL" = "Bruker" ]; then
 
                 # Body
                 STD_MSG "Brukeren \"$epost\" er logget inn!"
+
             else
                 ERROR_MSG "XML er ikke validert!"
             fi
+
         ;;
         PUT)
+
             # ----  Registrer bruker  ---- #
             
             # XML Validasjon
@@ -442,9 +451,9 @@ elif [ "$TABELL" = "Bruker" ]; then
 # ---- Sesjon TABELL ---- #
 elif [ "$TABELL" = "Sesjon" ]; then
 
-
     case "$REQUEST_METHOD" in
         POST)
+
             # ----  Validering av cookie  ---- #
 
             # Sjekker om cookie er satt
@@ -469,6 +478,7 @@ elif [ "$TABELL" = "Sesjon" ]; then
         
         ;;
         DELETE)
+        
             # ----  Logg ut  ---- #
 
             # Sjekker om bruker er logget inn
