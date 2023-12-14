@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let cookie = getSessionCookie(); 
         if (cookie) {
             var xhr = new XMLHttpRequest();
-            xhr.open('PUT', 'http://localhost:8180/Diktdatabase/Bruker/', true);
+            xhr.open('POST', 'http://localhost:8180/Diktdatabase/Sesjon/', true);
             xhr.setRequestHeader('accept', 'text/xml');
             
             xhr.onload = function() {

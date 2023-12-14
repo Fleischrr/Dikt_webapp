@@ -30,7 +30,7 @@ if [ -z "$HTTP_COOKIE" ]; then
 else 
 
     # Send xml forespørsel til backend for å sjekke om bruker er logget inn
-    COOKIE_RESPONSE=$(curl -s -X PUT "http://172.20.0.2/Diktdatabase/Bruker/" \
+    COOKIE_RESPONSE=$(curl -s -X POST "http://172.20.0.2/Diktdatabase/Sesjon/" \
         -H "accept: text/xml" \
         -H "Cookie: $HTTP_COOKIE")
 
