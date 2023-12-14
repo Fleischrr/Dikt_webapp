@@ -2,7 +2,7 @@ version: '3.8'
 services:
   konteiner-2:
     build: 
-      context: ./backend
+      context: ./konteiner-2
       dockerfile: ./Dockerfile
     image: konteiner-2
     container_name: konteiner-2
@@ -32,7 +32,7 @@ services:
 
   konteiner-3:
     build: 
-      context: ./frontend
+      context: ./konteiner-3
       dockerfile: ./Dockerfile
     image: konteiner-3
     container_name: konteiner-3
