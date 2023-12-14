@@ -16,7 +16,6 @@ unshare_tjener () {
     # Kopierer filer fra host til container
     cp      /bin/busybox $ROTFS/bin/
     cp -pr  /opt/Dikt_webapp/var/www/* $ROTFS/var/www/ 
-    chmod -rwx $ROTFS/var/www/jail.asis
     chmod -R +rw $ROTFS/var/
 
     cp      /etc/mime.types $ROTFS/etc/ 

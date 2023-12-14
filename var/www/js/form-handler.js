@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }  
     }
     
+    // Sjekker om service worker er støttet
     function serviceWorkerSjekk() {
         if( ! ( 'serviceWorker' in navigator) ) 
 
@@ -77,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Sjekker login status ved lasting av side
+    // Sjekker login status og service worker støtte
     checkLoginStatus()
     serviceWorkerSjekk()
     

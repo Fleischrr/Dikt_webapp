@@ -1,8 +1,3 @@
-HTTP/1.1 200 OK
-Content-Type: text/css
-Access-Control-Allow-Origin: *
-Connection: close
-
 a {
 
   color: #0d00ff;
